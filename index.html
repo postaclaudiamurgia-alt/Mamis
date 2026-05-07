@@ -1,0 +1,2555 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="theme-color" content="#E8636A"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Mamis"/>
+<title>Mamis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+:root {
+  --red: #E8636A;
+  --red-dark: #C94B52;
+  --red-pale: #FDF0F0;
+  --peach: #F4A261;
+  --off-white: #FAF9F7;
+  --warm-white: #F5F3EF;
+  --stone: #E8E4DE;
+  --text: #1A1A1A;
+  --text-mid: #6B6560;
+  --text-light: #A09B95;
+  --white: #FFFFFF;
+  --navy: #1C2340;
+  --green: #4A7C59;
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;-webkit-text-size-adjust:100%;}
+body{height:100%;overflow:hidden;}
+body {
+  background: var(--red);
+  font-family: 'Jost', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+#root { height: 100%; }
+::-webkit-scrollbar { display: none; }
+input, select, textarea, button { font-family: 'Jost', sans-serif; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes scaleIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(50px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
+
+.fade-up { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+.scale-in { animation: scaleIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+.slide-up { animation: slideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const GMAPS_KEY = "AIzaSyBFIeleR_MDgguQu1PcmnhzpppK54gHBNM";
+
+// ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
+const C = {
+  red:"#E8636A", redDark:"#C94B52", redPale:"#FDF0F0",
+  peach:"#F4A261", offWhite:"#FAF9F7", warmWhite:"#F5F3EF",
+  stone:"#E8E4DE", text:"#1A1A1A", textMid:"#6B6560",
+  textLight:"#A09B95", white:"#FFFFFF", navy:"#1C2340",
+  green:"#4A7C59", greenPale:"#EDF4EF",
+};
+
+// ── TYPOGRAPHY ────────────────────────────────────────────────────────────────
+const T = {
+  display: { fontFamily:"'Outfit',sans-serif", fontStyle:"normal", fontWeight:600 },
+  body: { fontFamily:"'Jost',sans-serif" },
+};
+
+// ── LAYOUT ────────────────────────────────────────────────────────────────────
+const L = {
+  app: {
+    fontFamily:"'Jost',sans-serif",
+    background: C.offWhite,
+    height: "100vh",
+    width: "100%",
+    maxWidth: 480,
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: "0 0 40px rgba(0,0,0,0.15)",
+    position: "relative",
+    overflow: "hidden",
+    WebkitTextSizeAdjust: "100%",
+  },
+  header: {
+    background: C.red,
+    padding: "16px 18px 18px",
+    flexShrink: 0,
+    paddingTop: "max(16px, env(safe-area-inset-top))",
+  },
+  scroll: {
+    flex: 1,
+    overflowY: "auto",
+    overflowX: "hidden",
+    padding: "16px 14px 110px",
+    WebkitOverflowScrolling: "touch",
+  },
+  nav: {
+    position: "absolute",
+    bottom: 0, left: 0, right: 0,
+    background: C.white,
+    borderTop: `1px solid ${C.stone}`,
+    display: "flex",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))",
+    paddingLeft: 4,
+    paddingRight: 4,
+    zIndex: 100,
+    minHeight: 70,
+  },
+  card: {
+    background: C.white,
+    borderRadius: 18,
+    padding: "16px 16px",
+    marginBottom: 12,
+    border: `1px solid ${C.stone}`,
+    wordBreak: "break-word",
+    overflow: "hidden",
+  },
+  cardWarm: {
+    background: C.warmWhite,
+    borderRadius: 18,
+    padding: "16px 16px",
+    marginBottom: 12,
+    border: `1px solid ${C.stone}`,
+    wordBreak: "break-word",
+    overflow: "hidden",
+  },
+  input: {
+    width: "100%",
+    padding: "13px 14px",
+    borderRadius: 13,
+    border: `1.5px solid ${C.stone}`,
+    fontSize: 16,
+    background: C.warmWhite,
+    outline: "none",
+    marginBottom: 10,
+    color: C.text,
+    transition: "border 0.2s",
+    WebkitAppearance: "none",
+    boxSizing: "border-box",
+  },
+  btn: {
+    background: C.red,
+    color: C.white,
+    border: "none",
+    borderRadius: 13,
+    padding: "14px 20px",
+    fontSize: 15,
+    fontWeight: 500,
+    cursor: "pointer",
+    letterSpacing: 0.3,
+    transition: "all 0.2s",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+  },
+  btnOut: {
+    background: "transparent",
+    color: C.red,
+    border: `1.5px solid ${C.red}`,
+    borderRadius: 13,
+    padding: "12px 18px",
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.2s",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+  },
+  btnDark: {
+    background: C.text,
+    color: C.white,
+    border: "none",
+    borderRadius: 13,
+    padding: "14px 20px",
+    fontSize: 15,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.2s",
+    WebkitTapHighlightColor: "transparent",
+  },
+  row: { display:"flex", alignItems:"center", gap:10 },
+  pill: { display:"inline-block", padding:"4px 11px", borderRadius:20, fontSize:12, fontWeight:500, whiteSpace:"nowrap" },
+  secLabel: {
+    fontSize: 11,
+    fontWeight: 500,
+    color: C.textLight,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  modal: {
+    position: "absolute", top:0, left:0, right:0, bottom:0,
+    background: "rgba(0,0,0,0.45)",
+    zIndex: 200,
+    display: "flex",
+    alignItems: "flex-end",
+  },
+  modalBox: {
+    background: C.white,
+    borderRadius: "22px 22px 0 0",
+    width: "100%",
+    padding: "22px 16px max(40px,env(safe-area-inset-bottom))",
+    maxHeight: "92%",
+    overflowY: "auto",
+    boxSizing: "border-box",
+  },
+};
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2,9);
+const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const DAYS = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+const DAYS_S = ["Lu","Ma","Me","Gi","Ve","Sa","Do"];
+const TYPE_MAP = {
+  lavoro:{icon:"💼",color:C.navy},
+  scuola:{icon:"📚",color:C.green},
+  figlio:{icon:"👶",color:C.peach},
+  festa:{icon:"🎉",color:"#9B6FD0"},
+  salute:{icon:"🏥",color:C.red},
+  altro:{icon:"📌",color:C.textMid},
+};
+function getDistance(lat1,lon1,lat2,lon2){
+  const R=6371e3,φ1=lat1*Math.PI/180,φ2=lat2*Math.PI/180;
+  const Δφ=(lat2-lat1)*Math.PI/180,Δλ=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function mToText(m){return m<1000?Math.round(m)+" m":(m/1000).toFixed(1)+" km";}
+function useClock(){
+  const [now,setNow]=useState(new Date());
+  useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t);},[]);
+  return now;
+}
+
+// ── LOGO SVG ──────────────────────────────────────────────────────────────────
+function LogoIcon({size=36,variant="white"}){
+  const sphereFill = C.white;
+  const heartStroke = C.red;
+  return(
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{borderRadius:"50%",flexShrink:0}}>
+      <circle cx="50" cy="50" r="50" fill={sphereFill}/>
+      <path d="M50 68 C50 68 28 55 24 43 C21 34 26 24 36 24 C43 24 47 30 50 37 C53 30 57 24 64 24 C74 24 79 34 76 43 C72 55 50 68 50 68Z"
+        fill="none" stroke={heartStroke} strokeWidth="6.5" strokeLinejoin="round" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function Modal({onClose,title,children}){
+  return(
+    <div style={L.modal} onClick={onClose}>
+      <div style={L.modalBox} className="slide-up" onClick={e=>e.stopPropagation()}>
+        <div style={{...L.row,justifyContent:"space-between",marginBottom:22}}>
+          <span style={{...T.display,fontSize:20,color:C.text}}>{title}</span>
+          <button onClick={onClose} style={{...L.btnOut,padding:"6px 14px",fontSize:13}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── TOGGLE ────────────────────────────────────────────────────────────────────
+function Toggle({on,onChange,label,sub}){
+  return(
+    <div style={{...L.row,justifyContent:"space-between",padding:"14px 0",borderBottom:`1px solid ${C.stone}`}}>
+      <div style={{flex:1,marginRight:16}}>
+        <div style={{fontSize:14,fontWeight:500,color:C.text}}>{label}</div>
+        {sub&&<div style={{fontSize:12,color:C.textLight,marginTop:2}}>{sub}</div>}
+      </div>
+      <div onClick={()=>onChange(!on)} style={{width:50,height:28,borderRadius:14,cursor:"pointer",position:"relative",background:on?C.red:C.stone,transition:"background 0.25s",flexShrink:0}}>
+        <div style={{position:"absolute",top:4,left:on?26:4,width:20,height:20,borderRadius:"50%",background:C.white,transition:"left 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
+      </div>
+    </div>
+  );
+}
+
+// ── INITIAL DATA ──────────────────────────────────────────────────────────────
+const now0=new Date();
+const todayStr=`${now0.getFullYear()}-${String(now0.getMonth()+1).padStart(2,'0')}-${String(now0.getDate()).padStart(2,'0')}`;
+
+const initEvents=[
+  {id:uid(),time:"08:30",title:"Accompagnare Luca a scuola",type:"scuola",date:todayStr},
+  {id:uid(),time:"10:00",title:"Call con cliente",type:"lavoro",date:todayStr},
+  {id:uid(),time:"15:30",title:"Calcio di Sofia",type:"figlio",date:todayStr},
+];
+const initPosts=[
+  {id:uid(),user:"Martina R.",avatar:"👩‍🦰",time:"2h",text:"Qualcuna conosce una buona babysitter zona Prati? Mia figlia ha 2 anni 🙏",likes:12,liked:false,comments:[],tag:"Aiuto"},
+  {id:uid(),user:"Giulia C.",avatar:"👩‍🦳",time:"5h",text:"Primo giorno d'asilo finito! Ho pianto più io di lui 😭❤️ Ce l'abbiamo fatta!",likes:47,liked:false,comments:[],tag:"Cuore"},
+  {id:uid(),user:"Sara M.",avatar:"👩",time:"ieri",text:"Come conciliate lavoro e bambini quando il partner è spesso via? 😓",likes:31,liked:false,comments:[],tag:"Consiglio"},
+];
+const initShopping=[
+  {id:uid(),item:"Latte intero",qty:"2 L",done:false,cat:"Frigo"},
+  {id:uid(),item:"Pannolini taglia 4",qty:"1 pz",done:false,cat:"Bimbi"},
+  {id:uid(),item:"Yogurt fragola",qty:"6 pz",done:false,cat:"Frigo"},
+  {id:uid(),item:"Pasta",qty:"500g",done:false,cat:"Dispensa"},
+];
+const initChores=[
+  {id:uid(),task:"Lavatrice colorati",done:false,icon:"👕",day:"Oggi"},
+  {id:uid(),task:"Stirare camicie",done:false,icon:"👔",day:"Domani"},
+  {id:uid(),task:"Aspirapolvere",done:false,icon:"🧹",day:"Giovedì"},
+];
+
+const MENU_4W=[
+  [{d:"Lun",p:"Pasta al pomodoro",c:"Pollo arrosto"},{d:"Mar",p:"Risotto ai piselli",c:"Sogliola al limone"},{d:"Mer",p:"Pasta e fagioli",c:"Polpette al sugo"},{d:"Gio",p:"Gnocchi al pesto",c:"Frittata di verdure"},{d:"Ven",p:"Insalata di riso",c:"🥂 SPRITZ time! Fuori con le amiche"},{d:"Sab",p:"Brunch pancakes",c:"Pizza fatta in casa"},{d:"Dom",p:"Lasagne al ragù",c:"Minestrone e pane"}],
+  [{d:"Lun",p:"Rigatoni amatriciana",c:"Petto di tacchino"},{d:"Mar",p:"Zuppa di lenticchie",c:"Salmone al forno"},{d:"Mer",p:"Pasta al tonno",c:"Cotolette di pollo"},{d:"Gio",p:"Riso al pomodoro",c:"Omelette prosciutto"},{d:"Ven",p:"Focaccia affettati",c:"🥂 SPRITZ time! Aperitivo baby friendly"},{d:"Sab",p:"Pasta al forno",c:"Bistecca e insalata"},{d:"Dom",p:"Arrosto con patate",c:"Passato di verdure"}],
+  [{d:"Lun",p:"Spaghetti carbonara",c:"Pollo al limone"},{d:"Mar",p:"Crema di zucca",c:"Merluzzo con olive"},{d:"Mer",p:"Pasta al ragù",c:"Verdure ripiene"},{d:"Gio",p:"Riso con zucchine",c:"Fesa di vitello"},{d:"Ven",p:"Piadina verdure",c:"🥂 SPRITZ time! Serata rilassante"},{d:"Sab",p:"Tagliatelle ragù",c:"Pesce al cartoccio"},{d:"Dom",p:"Grigliata mista",c:"Minestrone stagione"}],
+  [{d:"Lun",p:"Pasta broccoli aglio",c:"Scaloppine marsala"},{d:"Mar",p:"Riso alla milanese",c:"Baccalà con patate"},{d:"Mer",p:"Fusilli pesto rucola",c:"Polpettone al forno"},{d:"Gio",p:"Stracciatella brodo",c:"Crocchette di pollo"},{d:"Ven",p:"Toast e insalata",c:"🥂 SPRITZ time! Venerdì si festeggia!"},{d:"Sab",p:"Crepes salate e dolci",c:"Risotto funghi porcini"},{d:"Dom",p:"Bollito salsa verde",c:"Vellutata patate porri"}],
+];
+
+const GROCERIES=[
+  {item:"Pasta",qty:"2 kg",cat:"Dispensa"},{item:"Riso",qty:"1 kg",cat:"Dispensa"},{item:"Pomodori pelati",qty:"4 lattine",cat:"Dispensa"},{item:"Olio extravergine",qty:"1 L",cat:"Dispensa"},{item:"Tonno in scatola",qty:"4 lattine",cat:"Dispensa"},
+  {item:"Pollo",qty:"1.5 kg",cat:"Macelleria"},{item:"Bistecca",qty:"400g",cat:"Macelleria"},{item:"Salumi misti",qty:"200g",cat:"Macelleria"},
+  {item:"Salmone fresco",qty:"400g",cat:"Pescheria"},{item:"Merluzzo",qty:"400g",cat:"Pescheria"},
+  {item:"Latte intero",qty:"2 L",cat:"Frigo"},{item:"Uova grandi",qty:"12 pz",cat:"Frigo"},{item:"Burro",qty:"250g",cat:"Frigo"},{item:"Parmigiano",qty:"200g",cat:"Frigo"},
+  {item:"Patate",qty:"2 kg",cat:"Verdure"},{item:"Zucchine",qty:"500g",cat:"Verdure"},{item:"Carote",qty:"500g",cat:"Verdure"},{item:"Insalata mista",qty:"2 buste",cat:"Verdure"},
+  {item:"Prosecco / Aperol",qty:"1 bottiglia",cat:"Bevande"},{item:"Acqua naturale",qty:"6 L",cat:"Bevande"},
+];
+
+const CAT_OPTS=["Frigo","Dispensa","Macelleria","Pescheria","Verdure","Bevande","Bimbi","Pulizie","Bagno","Farmacia"];
+
+// ── MOCK CONTACTS ─────────────────────────────────────────────────────────────
+const MOCK_CONTACTS=[
+  {id:1,name:"Alessia Ferrari",init:"AF",color:C.red,onMamis:true,bebe:"Greta, 4a"},
+  {id:2,name:"Beatrice Longo",init:"BL",color:C.green,onMamis:true,bebe:"Nico, 2a"},
+  {id:3,name:"Chiara Neri",init:"CN",color:C.peach,onMamis:false,phone:"+39 329 555 4433"},
+  {id:4,name:"Daniela Russo",init:"DR",color:"#9B6FD0",onMamis:true,bebe:"Leo, 8m"},
+  {id:5,name:"Elena Vitale",init:"EV",color:C.navy,onMamis:false,phone:"+39 345 112 2334"},
+  {id:6,name:"Federica Mancini",init:"FM",color:C.red,onMamis:true,bebe:"Sofia, 6a"},
+  {id:7,name:"Giorgia Conti",init:"GC",color:C.green,onMamis:false,phone:"+39 333 987 6543"},
+  {id:8,name:"Irene Bianchi",init:"IB",color:C.peach,onMamis:true,bebe:"Emma, 3a"},
+];
+
+const MOCK_BS={
+  "Roma":[
+    {id:1,name:"Giulia Marini",age:26,icon:"👩‍🦱",rating:4.9,reviews:47,dist:"450 m",price:"12€/h",avail:true,verified:true,exp:"4 anni",lingue:["Italiano","Inglese"],tags:["Neonati","Primo soccorso"],bio:"Educatrice professionale. Amo i bambini!",phone:"+39 338 123 4567"},
+    {id:2,name:"Sofia Esposito",age:31,icon:"👩",rating:4.8,reviews:83,dist:"780 m",price:"14€/h",avail:true,verified:true,exp:"6 anni",lingue:["Italiano","Francese"],tags:["Compiti","Attività creative"],bio:"Maestra elementare, 6 anni di esperienza.",phone:"+39 347 234 5678"},
+    {id:3,name:"Alessia Conti",age:35,icon:"👩‍🦰",rating:5.0,reviews:112,dist:"1.1 km",price:"16€/h",avail:true,verified:true,exp:"9 anni",lingue:["Italiano","Inglese","Spagnolo"],tags:["Neonati","Gemelli","Primo soccorso"],bio:"Babysitter certificata. Referenze disponibili.",phone:"+39 320 345 6789"},
+  ],
+  "Milano":[
+    {id:1,name:"Martina Ferrari",age:28,icon:"👩‍🦱",rating:4.9,reviews:61,dist:"320 m",price:"15€/h",avail:true,verified:true,exp:"5 anni",lingue:["Italiano","Inglese"],tags:["Neonati","Bilingue"],bio:"Laurea in Pedagogia.",phone:"+39 388 456 7890"},
+    {id:2,name:"Laura Greco",age:40,icon:"👩‍🦳",rating:4.8,reviews:95,dist:"1.3 km",price:"17€/h",avail:false,verified:true,exp:"12 anni",lingue:["Italiano","Tedesco"],tags:["Neonati","Gemelli"],bio:"Oltre 12 anni di esperienza.",phone:"+39 366 567 8901"},
+  ],
+  "default":[
+    {id:1,name:"Valeria Russo",age:27,icon:"👩‍🦱",rating:4.8,reviews:52,dist:"200 m",price:"10€/h",avail:true,verified:true,exp:"4 anni",lingue:["Italiano"],tags:["Neonati","Giochi"],bio:"Animatrice ed educatrice.",phone:"+39 333 678 9012"},
+  ],
+};
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function HomeScreen({events,shopping,chores,now,userType}){
+  const h=now.getHours();
+  const greet=h<5?"Buonanotte":h<12?"Buongiorno":h<17?"Buon pomeriggio":"Buona sera";
+  const todayEvt=events.filter(e=>e.date===todayStr);
+  const timeStr=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const dateStr=`${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
+  return(
+    <div className="fade-up">
+      {/* Welcome */}
+      <div style={{...L.cardWarm,padding:"22px 22px"}}>
+        <div style={{fontSize:11,fontWeight:500,color:C.textLight,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>{dateStr}</div>
+        <div style={{...T.display,fontSize:26,color:C.text,lineHeight:1.2}}>{greet}, Sara</div>
+        <div style={{fontSize:38,fontWeight:300,color:C.red,marginTop:4,letterSpacing:-1}}>{timeStr}</div>
+        {userType==="babysitter"&&(
+          <div style={{marginTop:12,background:C.greenPale,borderRadius:10,padding:"8px 12px",...L.row,gap:8}}>
+            <span>✅</span><span style={{fontSize:13,color:C.green,fontWeight:500}}>Profilo baby sitter attivo</span>
+          </div>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:4}}>
+        {[
+          {l:"Oggi",v:todayEvt.length,c:C.red},
+          {l:"Spesa",v:shopping.filter(s=>!s.done).length,c:C.peach},
+          {l:"Casa",v:chores.filter(c=>!c.done).length,c:C.green},
+        ].map(s=>(
+          <div key={s.l} style={{...L.card,textAlign:"center",padding:"16px 8px",marginBottom:0}}>
+            <div style={{...T.display,fontSize:28,color:s.c,fontStyle:"normal"}}>{s.v}</div>
+            <div style={{fontSize:11,color:C.textLight,marginTop:2,letterSpacing:1,textTransform:"uppercase"}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Today events */}
+      <div style={L.secLabel}>Impegni di oggi</div>
+      {todayEvt.length===0&&(
+        <div style={{...L.cardWarm,textAlign:"center",padding:24}}>
+          <div style={{fontSize:28,marginBottom:6}}>☀️</div>
+          <div style={{fontSize:14,color:C.textMid}}>Nessun impegno oggi</div>
+        </div>
+      )}
+      {todayEvt.map((e,i)=>{
+        const t=TYPE_MAP[e.type]||TYPE_MAP.altro;
+        return(
+          <div key={e.id} style={{...L.card,padding:"14px 18px",borderLeft:`3px solid ${t.color}`,borderRadius:"0 16px 16px 0",marginBottom:10}} className="fade-up">
+            <div style={L.row}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:t.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{t.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>{e.title}</div>
+                <div style={{fontSize:12,color:C.textLight,marginTop:2}}>⏰ {e.time}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Quote */}
+      <div style={{...L.card,background:C.red,border:"none",padding:"22px 22px",marginTop:6}}>
+        <div style={{...T.display,fontSize:18,color:C.white,fontStyle:"italic",lineHeight:1.6}}>
+          "Sei una mamma straordinaria.<br/>Stai facendo un lavoro magnifico."
+        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginTop:10}}>— Mamis 🌸</div>
+      </div>
+    </div>
+  );
+}
+
+// ── AGENDA ────────────────────────────────────────────────────────────────────
+function AgendaScreen({events,setEvents,groups,setScreen}){
+  const now=useClock();
+  const [showModal,setShowModal]=useState(false);
+  const [filter,setFilter]=useState("tutti");
+  const [selDay,setSelDay]=useState(now.getDate());
+  const [form,setForm]=useState({title:"",time:"",type:"lavoro",date:todayStr});
+
+  const yr=now.getFullYear(),mo=now.getMonth(),todayN=now.getDate();
+  const firstDay=(new Date(yr,mo,1).getDay()+6)%7;
+  const daysInMo=new Date(yr,mo+1,0).getDate();
+  const calDays=[...Array(firstDay).fill(null),...Array.from({length:daysInMo},(_,i)=>i+1)];
+  const fmt=d=>`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const evOnDay=d=>events.filter(e=>e.date===fmt(d));
+  const filtered=events.filter(e=>e.date===fmt(selDay)&&(filter==="tutti"||e.type===filter));
+
+  const addEvent=()=>{
+    if(!form.title.trim()||!form.time.trim())return;
+    const t=TYPE_MAP[form.type]||TYPE_MAP.altro;
+    setEvents(p=>[...p,{id:uid(),...form,icon:t.icon,color:t.color}]);
+    setForm({title:"",time:"",type:"lavoro",date:fmt(selDay)});
+    setShowModal(false);
+  };
+
+  const timeStr=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+  return(
+    <div className="fade-up">
+      {/* Live clock */}
+      <div style={{...L.card,background:C.text,border:"none",padding:"18px 22px",marginBottom:14}}>
+        <div style={{fontSize:11,fontWeight:500,color:"rgba(255,255,255,0.5)",letterSpacing:2,textTransform:"uppercase"}}>{DAYS[now.getDay()]} {now.getDate()} {MONTHS[now.getMonth()]} {yr}</div>
+        <div style={{fontSize:36,fontWeight:300,color:C.white,letterSpacing:2,marginTop:4}}>{timeStr}</div>
+      </div>
+
+      {/* Calendar */}
+      <div style={{...L.cardWarm,padding:"18px 16px"}}>
+        <div style={{fontSize:13,fontWeight:500,color:C.text,textAlign:"center",marginBottom:14}}>{MONTHS[mo]} {yr}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:8}}>
+          {DAYS_S.map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:C.textLight,fontWeight:500,letterSpacing:0.5}}>{d}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+          {calDays.map((d,i)=>{
+            if(!d)return<div key={i}/>;
+            const isT=d===todayN,isSel=d===selDay,hasEv=evOnDay(d).length>0;
+            return(
+              <div key={i} onClick={()=>setSelDay(d)} style={{
+                textAlign:"center",padding:"7px 2px",borderRadius:10,cursor:"pointer",
+                background:isSel?C.red:isT?"rgba(232,99,106,0.12)":"transparent",
+                color:isSel?C.white:isT?C.red:C.text,
+                fontWeight:isSel||isT?500:400,fontSize:13,transition:"all 0.15s",
+              }}>
+                {d}
+                {hasEv&&<div style={{width:4,height:4,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.7)":C.red,margin:"2px auto 0"}}/>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+        {[["tutti","Tutti"],["lavoro","Lavoro"],["scuola","Scuola"],["figlio","Figli"],["festa","Feste"],["salute","Salute"]].map(([k,l])=>(
+          <div key={k} onClick={()=>setFilter(k)} style={{...L.pill,cursor:"pointer",background:filter===k?C.text:C.stone,color:filter===k?C.white:C.textMid,transition:"all 0.15s"}}>{l}</div>
+        ))}
+      </div>
+
+      <div style={L.secLabel}>{selDay} {MONTHS[mo]} — {filtered.length} impegni</div>
+      {filtered.length===0&&<div style={{...L.cardWarm,textAlign:"center",padding:22,color:C.textMid,fontSize:14}}>Nessun impegno. Tocca + per aggiungere.</div>}
+      {filtered.map(e=>{
+        const t=TYPE_MAP[e.type]||TYPE_MAP.altro;
+        const linkedGroup=groups?.find(g=>g.linkedEvent?.id===e.id);
+        return(
+          <div key={e.id} style={{...L.card,padding:"14px 16px"}} className="fade-up">
+            <div style={L.row}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:t.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{t.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>{e.title}</div>
+                <div style={{fontSize:12,color:C.textLight,marginTop:2}}>⏰ {e.time}</div>
+                {linkedGroup&&(
+                  <div onClick={()=>setScreen&&setScreen("social")} style={{...L.row,gap:6,marginTop:6,cursor:"pointer"}}>
+                    <div style={{fontSize:14}}>{linkedGroup.emoji}</div>
+                    <div style={{fontSize:12,color:C.red,fontWeight:500,textDecoration:"underline"}}>{linkedGroup.name}</div>
+                  </div>
+                )}
+              </div>
+              <button onClick={()=>setEvents(p=>p.filter(x=>x.id!==e.id))} style={{background:"none",border:"none",color:C.textLight,fontSize:18,cursor:"pointer",padding:4}}>×</button>
+            </div>
+          </div>
+        );
+      })}
+      <button onClick={()=>{setForm({...form,date:fmt(selDay)});setShowModal(true);}} style={{...L.btn,width:"100%",marginTop:8}}>
+        + Aggiungi impegno
+      </button>
+
+      {showModal&&(
+        <Modal onClose={()=>setShowModal(false)} title="Nuovo impegno">
+          <input style={L.input} placeholder="Titolo..." value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
+          <input style={L.input} placeholder="Orario es. 15:30" value={form.time} onChange={e=>setForm({...form,time:e.target.value})}/>
+          <input style={{...L.input}} type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+          <select style={{...L.input,marginBottom:14}} value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
+            {Object.entries(TYPE_MAP).map(([k,v])=><option key={k} value={k}>{v.icon} {k.charAt(0).toUpperCase()+k.slice(1)}</option>)}
+          </select>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={addEvent} style={{...L.btn,flex:1}}>Salva</button>
+            <button onClick={()=>setShowModal(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── SOCIAL ────────────────────────────────────────────────────────────────────
+function SocialScreen({posts,setPosts,events,groups,setGroups}){
+  const [tab,setTab]=useState("feed");
+  const [showPost,setShowPost]=useState(false);
+  const [newPost,setNewPost]=useState({text:"",tag:"Generale"});
+  const [commentId,setCommentId]=useState(null);
+  const [commentText,setCommentText]=useState("");
+  const [contactsStep,setContactsStep]=useState("idle");
+  const [contacts,setContacts]=useState([]);
+  const [added,setAdded]=useState({});
+  const [invited,setInvited]=useState({});
+  const [googleUser,setGoogleUser]=useState(null);
+  const [chatWith,setChatWith]=useState(null);
+  const [chatMsg,setChatMsg]=useState("");
+  const [chats,setChats]=useState({});
+  const [showCreateGroup,setShowCreateGroup]=useState(false);
+  const [newGroup,setNewGroup]=useState({name:"",desc:"",linkedEvent:"",emoji:"👥"});
+  const [activeGroup,setActiveGroup]=useState(null);
+  const [groupMsg,setGroupMsg]=useState("");
+  const [groupChats,setGroupChats]=useState({});
+
+  const EMOJIS=["👥","🎂","⚽","🏃","📚","🎉","🎁","🌸","💼","🍕","🎸","🏖️"];
+
+  // Google OAuth
+  const handleGoogleLogin=()=>{
+    setContactsStep("google-loading");
+    const loadGIS=()=>{
+      if(window.google?.accounts){startGoogleAuth();return;}
+      const s=document.createElement("script");
+      s.src="https://accounts.google.com/gsi/client";
+      s.async=true;s.onload=startGoogleAuth;
+      document.head.appendChild(s);
+    };
+    const startGoogleAuth=()=>{
+      try{
+        const client=window.google.accounts.oauth2.initTokenClient({
+          client_id:"256479728603-qu5it67lmi6pd70n9iil0v5oamaa5rji.apps.googleusercontent.com",
+          scope:"https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+          callback:async(tokenResponse)=>{
+            if(tokenResponse.error){setContactsStep("idle");return;}
+            try{
+              const [userRes,contactsRes]=await Promise.all([
+                fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:`Bearer ${tokenResponse.access_token}`}}),
+                fetch("https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=100",{headers:{Authorization:`Bearer ${tokenResponse.access_token}`}}),
+              ]);
+              const userData=await userRes.json();
+              const contactsData=await contactsRes.json();
+              setGoogleUser({name:userData.name,email:userData.email,picture:userData.picture});
+              const googleContacts=(contactsData.connections||[]).map((p,i)=>({
+                id:"g"+i,
+                name:p.names?.[0]?.displayName||"Contatto",
+                init:(p.names?.[0]?.displayName||"?").charAt(0).toUpperCase(),
+                email:p.emailAddresses?.[0]?.value||"",
+                phone:p.phoneNumbers?.[0]?.value||"",
+                color:[C.red,C.green,C.peach,"#9B6FD0",C.navy][i%5],
+                onMamis:Math.random()>0.6,
+                bebe:Math.random()>0.5?"Bimbo/a, "+(Math.floor(Math.random()*8)+1)+"a":null,
+              }));
+              setContacts(googleContacts.length>0?googleContacts:MOCK_CONTACTS);
+              setContactsStep("results");
+            }catch(e){
+              setGoogleUser({name:"Utente Google",email:"",picture:null});
+              setContacts(MOCK_CONTACTS);setContactsStep("results");
+            }
+          },
+        });
+        client.requestAccessToken();
+      }catch(e){
+        setTimeout(()=>{
+          setGoogleUser({name:"Sara Conti",email:"sara.conti@gmail.com",picture:null});
+          setContacts(MOCK_CONTACTS);setContactsStep("results");
+        },1500);
+      }
+    };
+    loadGIS();
+  };
+
+  const likePost=id=>setPosts(p=>p.map(x=>x.id===id?{...x,likes:x.liked?x.likes-1:x.likes+1,liked:!x.liked}:x));
+  const sendComment=id=>{
+    if(!commentText.trim())return;
+    setPosts(p=>p.map(x=>x.id===id?{...x,comments:[...x.comments,{id:uid(),text:commentText,user:"Tu",time:"ora"}]}:x));
+    setCommentText("");
+  };
+  const publishPost=()=>{
+    if(!newPost.text.trim())return;
+    setPosts(p=>[{id:uid(),user:"Sara C.",avatar:"👩‍💼",time:"ora",text:newPost.text,likes:0,liked:false,comments:[],tag:newPost.tag},...p]);
+    setNewPost({text:"",tag:"Generale"});setShowPost(false);
+  };
+
+  // Alphabetical contacts
+  const sortedContacts=[...contacts].sort((a,b)=>a.name.localeCompare(b.name,"it"));
+
+  // Create group
+  const createGroup=()=>{
+    if(!newGroup.name.trim())return;
+    const linkedEv=events.find(e=>e.id===newGroup.linkedEvent)||null;
+    setGroups(p=>[...p,{
+      id:uid(),
+      name:newGroup.name,
+      desc:newGroup.desc,
+      emoji:newGroup.emoji,
+      linkedEvent:linkedEv,
+      members:["Sara C."],
+      created:new Date().toLocaleDateString("it-IT"),
+    }]);
+    setNewGroup({name:"",desc:"",linkedEvent:"",emoji:"👥"});
+    setShowCreateGroup(false);
+  };
+
+  // Group chat
+  const sendGroupMsg=()=>{
+    if(!groupMsg.trim()||!activeGroup)return;
+    setGroupChats(prev=>({...prev,[activeGroup.id]:[...(prev[activeGroup.id]||[]),{id:uid(),text:groupMsg,user:"Tu",time:new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}]}));
+    setGroupMsg("");
+  };
+
+  // Chat with contact
+  const sendChatMsg=()=>{
+    if(!chatMsg.trim()||!chatWith)return;
+    const key=chatWith.id;
+    setChats(prev=>({...prev,[key]:[...(prev[key]||[]),{id:uid(),text:chatMsg,from:"me",time:new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}]}));
+    setChatMsg("");
+    setTimeout(()=>{
+      const replies=["Ciao! 😊","Quando ci vediamo?","Perfetto!","Sì, sono disponibile!","Mandami i dettagli 🌸"];
+      setChats(prev=>({...prev,[key]:[...(prev[key]||[]),{id:uid(),text:replies[Math.floor(Math.random()*replies.length)],from:"other",time:new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}]}));
+    },1500);
+  };
+
+  // GROUP CHAT VIEW
+  if(activeGroup){
+    const msgs=groupChats[activeGroup.id]||[];
+    return(
+      <div className="fade-up" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{...L.card,...L.row,padding:"12px 14px",marginBottom:12}}>
+          <button onClick={()=>setActiveGroup(null)} style={{background:"none",border:"none",color:C.textMid,fontSize:22,cursor:"pointer",padding:0,marginRight:4}}>←</button>
+          <div style={{width:40,height:40,borderRadius:14,background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{activeGroup.emoji}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,fontWeight:500,color:C.text}}>{activeGroup.name}</div>
+            <div style={{fontSize:11,color:C.textLight}}>{activeGroup.members.length} partecipanti{activeGroup.linkedEvent?` · 📅 ${activeGroup.linkedEvent.title}`:""}</div>
+          </div>
+        </div>
+        {activeGroup.linkedEvent&&(
+          <div style={{...L.cardWarm,padding:"10px 14px",marginBottom:10,...L.row,gap:8}}>
+            <span style={{fontSize:16}}>{TYPE_MAP[activeGroup.linkedEvent.type]?.icon||"📅"}</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:500,color:C.text}}>Impegno collegato</div>
+              <div style={{fontSize:12,color:C.textLight}}>{activeGroup.linkedEvent.title} · {activeGroup.linkedEvent.time}</div>
+            </div>
+          </div>
+        )}
+        <div style={{flex:1,overflowY:"auto",marginBottom:12}}>
+          {msgs.length===0&&<div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:13}}>Nessun messaggio ancora. Inizia la conversazione! 🌸</div>}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.user==="Tu"?"flex-end":"flex-start",marginBottom:8,padding:"0 4px"}}>
+              {m.user!=="Tu"&&<div style={{width:26,height:26,borderRadius:"50%",background:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,marginRight:6,alignSelf:"flex-end",fontWeight:500,color:C.textMid}}>{m.user?.charAt(0)||"?"}</div>}
+              <div style={{background:m.user==="Tu"?C.red:C.white,color:m.user==="Tu"?C.white:C.text,padding:"10px 14px",borderRadius:m.user==="Tu"?"18px 18px 4px 18px":"18px 18px 18px 4px",maxWidth:"75%",fontSize:14,lineHeight:1.5,border:m.user!=="Tu"?`1px solid ${C.stone}`:"none"}}>
+                {m.user!=="Tu"&&<div style={{fontSize:11,fontWeight:500,color:C.red,marginBottom:3}}>{m.user}</div>}
+                {m.text}
+                <div style={{fontSize:10,color:m.user==="Tu"?"rgba(255,255,255,0.6)":C.textLight,marginTop:3,textAlign:"right"}}>{m.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={L.row}>
+          <input style={{...L.input,flex:1,marginBottom:0}} placeholder="Scrivi al gruppo..." value={groupMsg} onChange={e=>setGroupMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendGroupMsg()}/>
+          <button onClick={sendGroupMsg} style={{...L.btn,padding:"13px 16px",marginLeft:8,flexShrink:0}}>↩</button>
+        </div>
+      </div>
+    );
+  }
+
+  // INDIVIDUAL CHAT VIEW
+  if(chatWith){
+    const msgs=chats[chatWith.id]||[];
+    return(
+      <div className="fade-up" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{...L.card,...L.row,padding:"12px 14px",marginBottom:12}}>
+          <button onClick={()=>setChatWith(null)} style={{background:"none",border:"none",color:C.textMid,fontSize:22,cursor:"pointer",padding:0,marginRight:4}}>←</button>
+          <div style={{width:38,height:38,borderRadius:"50%",background:chatWith.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:chatWith.color,fontSize:14,flexShrink:0}}>{chatWith.init}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,fontWeight:500,color:C.text}}>{chatWith.name}</div>
+            {chatWith.bebe&&<div style={{fontSize:11,color:C.textLight}}>👶 {chatWith.bebe}</div>}
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",marginBottom:12}}>
+          {msgs.length===0&&<div style={{textAlign:"center",padding:"30px 20px",color:C.textLight,fontSize:13}}>Inizia la conversazione con {chatWith.name} 🌸</div>}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.from==="me"?"flex-end":"flex-start",marginBottom:8,padding:"0 4px"}}>
+              <div style={{background:m.from==="me"?C.red:C.white,color:m.from==="me"?C.white:C.text,padding:"10px 14px",borderRadius:m.from==="me"?"18px 18px 4px 18px":"18px 18px 18px 4px",maxWidth:"75%",fontSize:14,lineHeight:1.5,border:m.from!=="me"?`1px solid ${C.stone}`:"none"}}>
+                {m.text}
+                <div style={{fontSize:10,color:m.from==="me"?"rgba(255,255,255,0.6)":C.textLight,marginTop:3,textAlign:"right"}}>{m.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={L.row}>
+          <input style={{...L.input,flex:1,marginBottom:0}} placeholder={`Scrivi a ${chatWith.name}...`} value={chatMsg} onChange={e=>setChatMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChatMsg()}/>
+          <button onClick={sendChatMsg} style={{...L.btn,padding:"13px 16px",marginLeft:8,flexShrink:0}}>↩</button>
+        </div>
+      </div>
+    );
+  }
+
+  const tabs=[{id:"feed",l:"Feed"},{id:"gruppi",l:"Gruppi"},{id:"contatti",l:"Contatti"},{id:"chat",l:"Chat"}];
+
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",background:C.stone,borderRadius:14,padding:4,marginBottom:16,gap:4,overflowX:"auto"}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flexShrink:0,flex:1,border:"none",borderRadius:12,padding:"9px 6px",background:tab===t.id?C.white:"transparent",color:tab===t.id?C.text:C.textMid,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.2s",boxShadow:tab===t.id?"0 1px 6px rgba(0,0,0,0.08)":"none",whiteSpace:"nowrap"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {/* FEED */}
+      {tab==="feed"&&(
+        <>
+          <button onClick={()=>setShowPost(true)} style={{...L.btnOut,width:"100%",marginBottom:16,textAlign:"center"}}>✍️ Condividi qualcosa...</button>
+          {posts.map(p=>(
+            <div key={p.id} style={L.card} className="fade-up">
+              <div style={{...L.row,marginBottom:12}}>
+                <div style={{width:38,height:38,borderRadius:"50%",background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.avatar}</div>
+                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.text}}>{p.user}</div><div style={{fontSize:11,color:C.textLight}}>{p.time} fa</div></div>
+                <div style={{...L.pill,background:C.redPale,color:C.red,fontSize:11}}>{p.tag}</div>
+              </div>
+              <p style={{fontSize:14,color:C.text,lineHeight:1.65,marginBottom:12}}>{p.text}</p>
+              {p.comments.map(cm=>(
+                <div key={cm.id} style={{background:C.warmWhite,borderRadius:10,padding:"8px 12px",marginBottom:6,fontSize:13,color:C.text}}>
+                  <strong style={{color:C.red}}>{cm.user}</strong>: {cm.text}
+                  <span style={{color:C.textLight,fontSize:11}}> · {cm.time}</span>
+                </div>
+              ))}
+              <div style={{borderTop:`1px solid ${C.stone}`,paddingTop:10,display:"flex",gap:4}}>
+                <button onClick={()=>likePost(p.id)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 10px",...L.row,gap:5}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={p.liked?C.red:"none"} stroke={p.liked?C.red:C.textLight} strokeWidth="1.8"/></svg>
+                  <span style={{fontSize:13,color:p.liked?C.red:C.textLight}}>{p.likes}</span>
+                </button>
+                <button onClick={()=>setCommentId(commentId===p.id?null:p.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.textLight,padding:"4px 10px"}}>
+                  💬 {p.comments.length}
+                </button>
+              </div>
+              {commentId===p.id&&(
+                <div style={{...L.row,marginTop:10}}>
+                  <input style={{...L.input,flex:1,marginBottom:0,fontSize:13,padding:"9px 13px"}} placeholder="Commenta..." value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendComment(p.id)}/>
+                  <button onClick={()=>sendComment(p.id)} style={{...L.btn,padding:"9px 14px",marginLeft:8,fontSize:13}}>↩</button>
+                </div>
+              )}
+            </div>
+          ))}
+          {showPost&&(
+            <Modal onClose={()=>setShowPost(false)} title="Nuovo post">
+              <textarea style={{...L.input,height:110,resize:"none"}} placeholder="Cosa vuoi condividere?" value={newPost.text} onChange={e=>setNewPost({...newPost,text:e.target.value})}/>
+              <select style={L.input} value={newPost.tag} onChange={e=>setNewPost({...newPost,tag:e.target.value})}>
+                {["Generale","Aiuto","Cuore","Consiglio","Lavoro","Scuola","Ricetta"].map(t=><option key={t}>{t}</option>)}
+              </select>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={publishPost} style={{...L.btn,flex:1}}>Pubblica</button>
+                <button onClick={()=>setShowPost(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+              </div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {/* GRUPPI */}
+      {tab==="gruppi"&&(
+        <>
+          <button onClick={()=>setShowCreateGroup(true)} style={{...L.btn,width:"100%",marginBottom:14}}>
+            + Crea nuovo gruppo
+          </button>
+
+          {groups.length===0&&(
+            <div style={{...L.cardWarm,textAlign:"center",padding:28}}>
+              <div style={{fontSize:36,marginBottom:10}}>👥</div>
+              <div style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:6}}>Nessun gruppo ancora</div>
+              <div style={{fontSize:13,color:C.textLight,lineHeight:1.6}}>Crea un gruppo per un evento, una festa o un'attività e tieni tutti aggiornati!</div>
+            </div>
+          )}
+
+          {groups.map(g=>{
+            const msgs=groupChats[g.id]||[];
+            const last=msgs[msgs.length-1];
+            return(
+              <div key={g.id} style={{...L.card,cursor:"pointer"}} onClick={()=>setActiveGroup(g)} className="fade-up">
+                <div style={L.row}>
+                  <div style={{width:46,height:46,borderRadius:14,background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{g.emoji}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:500,color:C.text}}>{g.name}</div>
+                    <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{g.members.length} partecipanti</div>
+                    {g.linkedEvent&&(
+                      <div style={{fontSize:11,color:C.red,marginTop:3}}>
+                        📅 {g.linkedEvent.title} · {g.linkedEvent.time}
+                      </div>
+                    )}
+                    {last&&<div style={{fontSize:12,color:C.textLight,marginTop:3,fontStyle:"italic"}}>"{last.text}"</div>}
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontSize:10,color:C.textLight}}>{g.created}</div>
+                    {msgs.length>0&&<div style={{...L.pill,background:C.red,color:C.white,marginTop:4,fontSize:10}}>{msgs.length}</div>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Gruppi collegati agli impegni */}
+          {events.filter(e=>!groups.find(g=>g.linkedEvent?.id===e.id)).length>0&&(
+            <>
+              <div style={L.secLabel}>Crea gruppo da impegno</div>
+              {events.filter(e=>!groups.find(g=>g.linkedEvent?.id===e.id)).slice(0,5).map(e=>{
+                const t=TYPE_MAP[e.type]||TYPE_MAP.altro;
+                return(
+                  <div key={e.id} style={{...L.card,...L.row}} className="fade-up">
+                    <div style={{width:36,height:36,borderRadius:"50%",background:t.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{t.icon}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:500,color:C.text}}>{e.title}</div>
+                      <div style={{fontSize:11,color:C.textLight}}>⏰ {e.time}</div>
+                    </div>
+                    <button onClick={()=>{setNewGroup({name:`Gruppo ${e.title}`,desc:"",linkedEvent:e.id,emoji:t.icon||"👥"});setShowCreateGroup(true);}} style={{...L.btnOut,padding:"6px 12px",fontSize:12,whiteSpace:"nowrap"}}>
+                      + Gruppo
+                    </button>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {showCreateGroup&&(
+            <Modal onClose={()=>setShowCreateGroup(false)} title="Nuovo gruppo">
+              {/* Emoji selector */}
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:12,color:C.textLight,marginBottom:8,letterSpacing:1,textTransform:"uppercase"}}>Icona gruppo</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {EMOJIS.map(em=>(
+                    <div key={em} onClick={()=>setNewGroup({...newGroup,emoji:em})} style={{width:40,height:40,borderRadius:12,background:newGroup.emoji===em?C.red:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,cursor:"pointer",transition:"all 0.15s"}}>
+                      {em}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <input style={L.input} placeholder="Nome gruppo *" value={newGroup.name} onChange={e=>setNewGroup({...newGroup,name:e.target.value})}/>
+              <input style={L.input} placeholder="Descrizione (opzionale)" value={newGroup.desc} onChange={e=>setNewGroup({...newGroup,desc:e.target.value})}/>
+              {/* Link to event */}
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:12,color:C.textLight,marginBottom:6,letterSpacing:1,textTransform:"uppercase"}}>Collega a un impegno</div>
+                <select style={{...L.input,marginBottom:0}} value={newGroup.linkedEvent} onChange={e=>setNewGroup({...newGroup,linkedEvent:e.target.value})}>
+                  <option value="">— Nessun impegno collegato —</option>
+                  {events.map(e=><option key={e.id} value={e.id}>{e.title} · {e.time}</option>)}
+                </select>
+              </div>
+              <div style={{display:"flex",gap:10,marginTop:6}}>
+                <button onClick={createGroup} style={{...L.btn,flex:1}}>Crea gruppo</button>
+                <button onClick={()=>setShowCreateGroup(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+              </div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {/* CONTATTI - Ordine alfabetico */}
+      {tab==="contatti"&&(
+        <>
+          {contactsStep==="idle"&&(
+            <div>
+              <div style={{...L.card,background:C.text,border:"none",textAlign:"center",padding:"32px 22px"}}>
+                <div style={{width:64,height:64,borderRadius:"50%",background:"white",margin:"0 auto 16px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <svg width="32" height="32" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+                </div>
+                <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:20,color:C.white,marginBottom:8}}>Accedi con Google</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.7,marginBottom:22}}>Importa i contatti e trovare le tue amiche su Mamis.</div>
+                <button onClick={handleGoogleLogin} style={{background:C.white,color:C.text,border:"none",borderRadius:14,padding:"13px 28px",fontSize:14,fontWeight:600,cursor:"pointer",...L.row,gap:10,margin:"0 auto"}}>
+                  <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+                  Continua con Google
+                </button>
+              </div>
+              <div style={{textAlign:"center",marginTop:8}}>
+                <button onClick={()=>{setContactsStep("loading");setTimeout(()=>{setContacts(MOCK_CONTACTS);setContactsStep("results");},1800);}} style={{background:"none",border:"none",color:C.textLight,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                  Oppure importa i contatti del telefono
+                </button>
+              </div>
+            </div>
+          )}
+          {contactsStep==="google-loading"&&<div style={{textAlign:"center",padding:"80px 20px"}}><div style={{width:56,height:56,borderRadius:"50%",background:C.redPale,margin:"0 auto 20px",display:"flex",alignItems:"center",justifyContent:"center",animation:"spin 1.5s linear infinite",fontSize:28}}>G</div><div style={{fontSize:15,fontWeight:500,color:C.text}}>Connessione a Google...</div></div>}
+          {contactsStep==="loading"&&<div style={{textAlign:"center",padding:"80px 20px"}}><div style={{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}}>📱</div><div style={{fontSize:15,fontWeight:500,color:C.text,marginTop:18}}>Cerco le tue amiche...</div></div>}
+          {contactsStep==="results"&&(
+            <>
+              {googleUser&&(
+                <div style={{...L.card,background:C.text,border:"none",...L.row,padding:"13px 16px",marginBottom:14}}>
+                  {googleUser.picture?<img src={googleUser.picture} style={{width:38,height:38,borderRadius:"50%",flexShrink:0}} alt=""/>:<div style={{width:38,height:38,borderRadius:"50%",background:C.red,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontSize:16,flexShrink:0}}>👤</div>}
+                  <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:C.white}}>{googleUser.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.55)"}}>{googleUser.email}</div></div>
+                  <button onClick={()=>{setGoogleUser(null);setContactsStep("idle");setContacts([]);}} style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:8,color:"rgba(255,255,255,0.7)",fontSize:11,padding:"5px 10px",cursor:"pointer"}}>Esci</button>
+                </div>
+              )}
+              <div style={{...L.card,background:C.red,border:"none",padding:"14px 18px",marginBottom:14}}>
+                <div style={{display:"flex",gap:0,textAlign:"center"}}>
+                  {[{v:contacts.filter(c=>c.onMamis).length,l:"su Mamis"},{v:contacts.filter(c=>!c.onMamis).length,l:"invitare"},{v:contacts.length,l:"totali"}].map((s,i)=>(
+                    <div key={i} style={{flex:1}}><div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:24,color:C.white}}>{s.v}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{s.l}</div></div>
+                  ))}
+                </div>
+              </div>
+              {/* A-Z index */}
+              <div style={L.secLabel}>A-Z · Già su Mamis</div>
+              {sortedContacts.filter(c=>c.onMamis).map((c,i,arr)=>{
+                const showLetter=i===0||arr[i-1].name.charAt(0).toUpperCase()!==c.name.charAt(0).toUpperCase();
+                return(
+                  <div key={c.id}>
+                    {showLetter&&<div style={{fontSize:12,fontWeight:500,color:C.red,padding:"4px 4px",marginBottom:4,letterSpacing:1}}>{c.name.charAt(0).toUpperCase()}</div>}
+                    <div style={{...L.card,...L.row,marginBottom:8}}>
+                      <div style={{width:38,height:38,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:13,flexShrink:0}}>{c.init}</div>
+                      <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div><div style={{fontSize:12,color:C.textLight}}>👶 {c.bebe}</div></div>
+                      {added[c.id]
+                        ?<div style={{...L.pill,background:C.greenPale,color:C.green,fontSize:11}}>✓</div>
+                        :<div style={{display:"flex",gap:6}}>
+                          <button onClick={()=>setChatWith(c)} style={{...L.btnOut,padding:"6px 10px",fontSize:12}}>Chat</button>
+                          <button onClick={()=>setAdded({...added,[c.id]:true})} style={{...L.btn,padding:"6px 10px",fontSize:12}}>+</button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={L.secLabel}>A-Z · Invita su Mamis</div>
+              {sortedContacts.filter(c=>!c.onMamis).map((c,i,arr)=>{
+                const showLetter=i===0||arr[i-1].name.charAt(0).toUpperCase()!==c.name.charAt(0).toUpperCase();
+                return(
+                  <div key={c.id}>
+                    {showLetter&&<div style={{fontSize:12,fontWeight:500,color:C.textLight,padding:"4px 4px",marginBottom:4,letterSpacing:1}}>{c.name.charAt(0).toUpperCase()}</div>}
+                    <div style={{...L.card,...L.row,marginBottom:8}}>
+                      <div style={{width:38,height:38,borderRadius:"50%",background:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:C.textMid,fontSize:13,flexShrink:0}}>{c.init}</div>
+                      <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div><div style={{fontSize:12,color:C.textLight}}>{c.phone||c.email||""}</div></div>
+                      {invited[c.id]?<div style={{...L.pill,background:"#FFF3E0",color:C.peach,fontSize:11}}>📨</div>:<button onClick={()=>setInvited({...invited,[c.id]:true})} style={{...L.btnOut,padding:"6px 10px",fontSize:12}}>Invita</button>}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </>
+      )}
+
+      {/* CHAT */}
+      {tab==="chat"&&(
+        <>
+          <div style={L.secLabel}>Conversazioni</div>
+          {Object.keys(chats).filter(k=>chats[k]?.length>0).length===0&&(
+            <div style={{...L.cardWarm,textAlign:"center",padding:24}}>
+              <div style={{fontSize:28,marginBottom:8}}>💬</div>
+              <div style={{fontSize:14,color:C.textMid}}>Nessuna conversazione ancora.</div>
+            </div>
+          )}
+          {MOCK_CONTACTS.filter(c=>chats[c.id]?.length>0).map(c=>{
+            const msgs=chats[c.id]||[];
+            const last=msgs[msgs.length-1];
+            return(
+              <div key={c.id} style={{...L.card,...L.row,cursor:"pointer"}} onClick={()=>setChatWith(c)}>
+                <div style={{width:40,height:40,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:14,flexShrink:0}}>{c.init}</div>
+                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div><div style={{fontSize:12,color:C.textLight,marginTop:2}}>{last?.text||""}</div></div>
+                <div style={{fontSize:11,color:C.textLight}}>{last?.time||""}</div>
+              </div>
+            );
+          })}
+          <div style={L.secLabel}>Inizia una conversazione</div>
+          {MOCK_CONTACTS.filter(c=>c.onMamis&&!chats[c.id]?.length).sort((a,b)=>a.name.localeCompare(b.name,"it")).map(c=>(
+            <div key={c.id} style={{...L.card,...L.row,cursor:"pointer"}} onClick={()=>setChatWith(c)}>
+              <div style={{width:38,height:38,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:13,flexShrink:0}}>{c.init}</div>
+              <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div><div style={{fontSize:12,color:C.textLight}}>👶 {c.bebe}</div></div>
+              <button style={{...L.btnOut,padding:"6px 12px",fontSize:12}}>Chat</button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+  const [showPost,setShowPost]=useState(false);
+  const [newPost,setNewPost]=useState({text:"",tag:"Generale"});
+  const [commentId,setCommentId]=useState(null);
+  const [commentText,setCommentText]=useState("");
+  const [contactsStep,setContactsStep]=useState("idle");
+  const [contacts,setContacts]=useState([]);
+  const [added,setAdded]=useState({});
+  const [invited,setInvited]=useState({});
+  const [googleUser,setGoogleUser]=useState(null);
+
+  // Google OAuth via popup
+  const handleGoogleLogin=()=>{
+    setContactsStep("google-loading");
+    // Load Google Identity Services
+    const loadGIS=()=>{
+      if(window.google?.accounts){
+        startGoogleAuth();return;
+      }
+      const s=document.createElement("script");
+      s.src="https://accounts.google.com/gsi/client";
+      s.async=true;
+      s.onload=startGoogleAuth;
+      document.head.appendChild(s);
+    };
+    const startGoogleAuth=()=>{
+      try{
+        const client=window.google.accounts.oauth2.initTokenClient({
+          client_id:"256479728603-qu5it67lmi6pd70n9iil0v5oamaa5rji.apps.googleusercontent.com",
+          scope:"https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+          callback:async(tokenResponse)=>{
+            if(tokenResponse.error){setContactsStep("idle");return;}
+            // Get user info
+            try{
+              const [userRes,contactsRes]=await Promise.all([
+                fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:`Bearer ${tokenResponse.access_token}`}}),
+                fetch("https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=100",{headers:{Authorization:`Bearer ${tokenResponse.access_token}`}}),
+              ]);
+              const userData=await userRes.json();
+              const contactsData=await contactsRes.json();
+              setGoogleUser({name:userData.name,email:userData.email,picture:userData.picture});
+              // Map Google contacts to Mamis format
+              const googleContacts=(contactsData.connections||[]).map((p,i)=>({
+                id:"g"+i,
+                name:p.names?.[0]?.displayName||"Contatto",
+                init:(p.names?.[0]?.displayName||"?").charAt(0).toUpperCase(),
+                email:p.emailAddresses?.[0]?.value||"",
+                phone:p.phoneNumbers?.[0]?.value||"",
+                color:[C.red,C.green,C.peach,"#9B6FD0",C.navy][i%5],
+                onMamis:Math.random()>0.6, // In produzione: vera verifica lato server
+                bebe:Math.random()>0.5?"Bimbo/a, "+(Math.floor(Math.random()*8)+1)+"a":null,
+              }));
+              setContacts(googleContacts.length>0?googleContacts:MOCK_CONTACTS);
+              setContactsStep("results");
+            }catch(e){
+              // Fallback ai contatti mock se errore API
+              setGoogleUser({name:"Utente Google",email:"",picture:null});
+              setContacts(MOCK_CONTACTS);setContactsStep("results");
+            }
+          },
+        });
+        client.requestAccessToken();
+      }catch(e){
+        // Se non c'è client ID configurato, usa mock con utente finto
+        setTimeout(()=>{
+          setGoogleUser({name:"Sara Conti",email:"sara.conti@gmail.com",picture:null});
+          setContacts(MOCK_CONTACTS);setContactsStep("results");
+        },1500);
+      }
+    };
+    loadGIS();
+  };
+  const [chatWith,setChatWith]=useState(null);
+  const [chatMsg,setChatMsg]=useState("");
+  const [chats,setChats]=useState({});
+
+  const likePost=id=>setPosts(p=>p.map(x=>x.id===id?{...x,likes:x.liked?x.likes-1:x.likes+1,liked:!x.liked}:x));
+  const sendComment=id=>{
+    if(!commentText.trim())return;
+    setPosts(p=>p.map(x=>x.id===id?{...x,comments:[...x.comments,{id:uid(),text:commentText,user:"Tu",time:"ora"}]}:x));
+    setCommentText("");
+  };
+  const publishPost=()=>{
+    if(!newPost.text.trim())return;
+    setPosts(p=>[{id:uid(),user:"Sara C.",avatar:"👩‍💼",time:"ora",text:newPost.text,likes:0,liked:false,comments:[],tag:newPost.tag},...p]);
+    setNewPost({text:"",tag:"Generale"});setShowPost(false);
+  };
+  const sendChatMsg=()=>{
+    if(!chatMsg.trim()||!chatWith)return;
+    const key=chatWith.id;
+    setChats(prev=>({...prev,[key]:[...(prev[key]||[]),{id:uid(),text:chatMsg,from:"me",time:"ora"}]}));
+    setChatMsg("");
+  };
+
+  const tabs=[{id:"feed",l:"Feed"},{id:"contatti",l:"Contatti"},{id:"chat",l:"Chat"}];
+
+  // Chat view
+  if(chatWith){
+    const msgs=chats[chatWith.id]||[];
+    return(
+      <div className="fade-up" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{...L.row,marginBottom:16}}>
+          <button onClick={()=>setChatWith(null)} style={{background:"none",border:"none",color:C.textMid,fontSize:22,cursor:"pointer",padding:0}}>←</button>
+          <div style={{width:36,height:36,borderRadius:"50%",background:C.red+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:C.red,fontSize:14}}>{chatWith.init}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:500,color:C.text}}>{chatWith.name}</div>
+            {chatWith.bebe&&<div style={{fontSize:11,color:C.textLight}}>👶 {chatWith.bebe}</div>}
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",marginBottom:14}}>
+          {msgs.length===0&&<div style={{textAlign:"center",padding:30,color:C.textLight,fontSize:13}}>Inizia una conversazione con {chatWith.name} 🌸</div>}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.from==="me"?"flex-end":"flex-start",marginBottom:8}}>
+              <div style={{background:m.from==="me"?C.red:C.warmWhite,color:m.from==="me"?C.white:C.text,padding:"10px 14px",borderRadius:16,maxWidth:"75%",fontSize:14,lineHeight:1.5}}>
+                {m.text}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{...L.row}}>
+          <input style={{...L.input,flex:1,marginBottom:0}} placeholder="Scrivi un messaggio..." value={chatMsg} onChange={e=>setChatMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChatMsg()}/>
+          <button onClick={sendChatMsg} style={{...L.btn,padding:"13px 18px",marginLeft:8,flexShrink:0}}>↩</button>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="fade-up">
+      {/* Tabs */}
+      <div style={{display:"flex",background:C.stone,borderRadius:14,padding:4,marginBottom:16,gap:4}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,border:"none",borderRadius:12,padding:"9px 6px",background:tab===t.id?C.white:"transparent",color:tab===t.id?C.text:C.textMid,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.2s",boxShadow:tab===t.id?"0 1px 6px rgba(0,0,0,0.08)":"none"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {/* FEED */}
+      {tab==="feed"&&(
+        <>
+          <button onClick={()=>setShowPost(true)} style={{...L.btnOut,width:"100%",marginBottom:16,textAlign:"center"}}>✍️ Condividi qualcosa...</button>
+          {posts.map(p=>(
+            <div key={p.id} style={L.card} className="fade-up">
+              <div style={{...L.row,marginBottom:12}}>
+                <div style={{width:38,height:38,borderRadius:"50%",background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.avatar}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:500,color:C.text}}>{p.user}</div>
+                  <div style={{fontSize:11,color:C.textLight}}>{p.time} fa</div>
+                </div>
+                <div style={{...L.pill,background:C.redPale,color:C.red,fontSize:11}}>{p.tag}</div>
+              </div>
+              <p style={{fontSize:14,color:C.text,lineHeight:1.65,marginBottom:12}}>{p.text}</p>
+              {p.comments.map(cm=>(
+                <div key={cm.id} style={{background:C.warmWhite,borderRadius:10,padding:"8px 12px",marginBottom:6,fontSize:13,color:C.text}}>
+                  <strong style={{color:C.red}}>{cm.user}</strong>: {cm.text}
+                  <span style={{color:C.textLight,fontSize:11}}> · {cm.time}</span>
+                </div>
+              ))}
+              <div style={{borderTop:`1px solid ${C.stone}`,paddingTop:10,display:"flex",gap:4}}>
+                <button onClick={()=>likePost(p.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:p.liked?C.red:C.textLight,padding:"4px 10px",fontWeight:p.liked?500:400}}>
+                  {p.liked?"❤️":"🤍"} {p.likes}
+                </button>
+                <button onClick={()=>setCommentId(commentId===p.id?null:p.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.textLight,padding:"4px 10px"}}>
+                  💬 {p.comments.length}
+                </button>
+              </div>
+              {commentId===p.id&&(
+                <div style={{...L.row,marginTop:10}}>
+                  <input style={{...L.input,flex:1,marginBottom:0,fontSize:13,padding:"9px 13px"}} placeholder="Commenta..." value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendComment(p.id)}/>
+                  <button onClick={()=>sendComment(p.id)} style={{...L.btn,padding:"9px 14px",marginLeft:8,fontSize:13}}>↩</button>
+                </div>
+              )}
+            </div>
+          ))}
+          {showPost&&(
+            <Modal onClose={()=>setShowPost(false)} title="Nuovo post">
+              <textarea style={{...L.input,height:110,resize:"none"}} placeholder="Cosa vuoi condividere?" value={newPost.text} onChange={e=>setNewPost({...newPost,text:e.target.value})}/>
+              <select style={L.input} value={newPost.tag} onChange={e=>setNewPost({...newPost,tag:e.target.value})}>
+                {["Generale","Aiuto","Cuore","Consiglio","Lavoro","Scuola","Ricetta"].map(t=><option key={t}>{t}</option>)}
+              </select>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={publishPost} style={{...L.btn,flex:1}}>Pubblica</button>
+                <button onClick={()=>setShowPost(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+              </div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {/* CONTATTI */}
+      {tab==="contatti"&&(
+        <>
+          {contactsStep==="idle"&&(
+            <div>
+              {/* Google Sign In card */}
+              <div style={{...L.card,background:C.text,border:"none",textAlign:"center",padding:"32px 22px"}}>
+                <div style={{width:64,height:64,borderRadius:"50%",background:"white",margin:"0 auto 16px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <svg width="32" height="32" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
+                  </svg>
+                </div>
+                <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:20,color:C.white,marginBottom:8}}>Accedi con Google</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.7,marginBottom:22}}>
+                  Connetti il tuo account Google per importare i contatti e trovare le tue amiche su Mamis.
+                </div>
+                <button onClick={()=>handleGoogleLogin()} style={{background:C.white,color:C.text,border:"none",borderRadius:14,padding:"13px 28px",fontSize:14,fontWeight:600,cursor:"pointer",...L.row,gap:10,margin:"0 auto"}}>
+                  <svg width="18" height="18" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
+                  </svg>
+                  Continua con Google
+                </button>
+              </div>
+
+              {/* Privacy note */}
+              <div style={{...L.cardWarm,padding:"16px 18px"}}>
+                <div style={{fontSize:12,fontWeight:500,color:C.textMid,marginBottom:10,letterSpacing:0.5}}>🔒 Come usiamo i tuoi dati Google</div>
+                {[
+                  "Leggiamo solo nome, email e contatti",
+                  "I contatti non vengono mai salvati sui nostri server",
+                  "Usiamo i numeri solo per cercare corrispondenze su Mamis",
+                  "Puoi revocare l'accesso in qualsiasi momento",
+                  "Non condividiamo nulla con terze parti",
+                ].map((t,i)=>(
+                  <div key={i} style={{...L.row,marginBottom:7,alignItems:"flex-start"}}>
+                    <span style={{color:C.green,fontSize:12,flexShrink:0,marginTop:1}}>✓</span>
+                    <span style={{fontSize:12,color:C.textMid}}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Alternative: import manually */}
+              <div style={{textAlign:"center",marginTop:4}}>
+                <button onClick={()=>{setContactsStep("loading");setTimeout(()=>{setContacts(MOCK_CONTACTS);setContactsStep("results");},1800);}} style={{background:"none",border:"none",color:C.textLight,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                  Oppure importa i contatti del telefono
+                </button>
+              </div>
+            </div>
+          )}
+
+          {contactsStep==="google-loading"&&(
+            <div style={{textAlign:"center",padding:"80px 20px"}} className="fade-up">
+              <div style={{width:64,height:64,borderRadius:"50%",background:C.redPale,margin:"0 auto 20px",display:"flex",alignItems:"center",justifyContent:"center",animation:"spin 1.5s linear infinite"}}>
+                <svg width="32" height="32" viewBox="0 0 48 48">
+                  <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.3 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/>
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                  <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.4-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/>
+                  <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
+                </svg>
+              </div>
+              <div style={{fontSize:15,fontWeight:500,color:C.text}}>Connessione a Google...</div>
+              <div style={{fontSize:13,color:C.textLight,marginTop:6}}>Importo i tuoi contatti in modo sicuro</div>
+            </div>
+          )}
+
+          {contactsStep==="google-done"&&googleUser&&(
+            <div className="fade-up">
+              {/* Google user card */}
+              <div style={{...L.card,background:C.text,border:"none",...L.row,padding:"16px 18px",marginBottom:14}}>
+                {googleUser.picture
+                  ?<img src={googleUser.picture} style={{width:44,height:44,borderRadius:"50%",flexShrink:0}} alt=""/>
+                  :<div style={{width:44,height:44,borderRadius:"50%",background:C.red,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,color:C.white}}>👤</div>
+                }
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:500,color:C.white}}>{googleUser.name}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{googleUser.email}</div>
+                </div>
+                <div style={{...L.pill,background:"rgba(255,255,255,0.15)",color:C.white,fontSize:11}}>✓ Google</div>
+              </div>
+            </div>
+          )}
+
+          {(contactsStep==="loading"||contactsStep==="google-done")&&contactsStep==="loading"&&(
+            <div style={{textAlign:"center",padding:"80px 20px"}}>
+              <div style={{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}}>📱</div>
+              <div style={{fontSize:15,fontWeight:500,color:C.text,marginTop:18}}>Cerco le tue amiche...</div>
+            </div>
+          )}
+
+          {contactsStep==="results"&&(
+            <>
+              {googleUser&&(
+                <div style={{...L.card,background:C.text,border:"none",...L.row,padding:"14px 18px",marginBottom:14}}>
+                  {googleUser.picture
+                    ?<img src={googleUser.picture} style={{width:38,height:38,borderRadius:"50%",flexShrink:0}} alt=""/>
+                    :<div style={{width:38,height:38,borderRadius:"50%",background:C.red,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontSize:16,flexShrink:0}}>👤</div>
+                  }
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:500,color:C.white}}>{googleUser.name}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.55)"}}>{googleUser.email}</div>
+                  </div>
+                  <button onClick={()=>{setGoogleUser(null);setContactsStep("idle");setContacts([]);}} style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:8,color:"rgba(255,255,255,0.7)",fontSize:11,padding:"5px 10px",cursor:"pointer"}}>Esci</button>
+                </div>
+              )}
+
+              <div style={{...L.card,background:C.red,border:"none",padding:"16px 20px"}}>
+                <div style={{display:"flex",gap:0,textAlign:"center"}}>
+                  {[{v:contacts.filter(c=>c.onMamis).length,l:"su Mamis"},{v:contacts.filter(c=>!c.onMamis).length,l:"da invitare"},{v:contacts.length,l:"totali"}].map((s,i)=>(
+                    <div key={i} style={{flex:1}}>
+                      <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:26,color:C.white}}>{s.v}</div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",letterSpacing:0.5}}>{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={L.secLabel}>Già su Mamis</div>
+              {contacts.filter(c=>c.onMamis).map(c=>(
+                <div key={c.id} style={{...L.card,...L.row}}>
+                  <div style={{width:38,height:38,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:13,flexShrink:0}}>{c.init}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div>
+                    <div style={{fontSize:12,color:C.textLight}}>👶 {c.bebe}</div>
+                  </div>
+                  {added[c.id]
+                    ?<div style={{...L.pill,background:C.greenPale,color:C.green}}>✓ Aggiunta</div>
+                    :<div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>setChatWith(c)} style={{...L.btnOut,padding:"6px 12px",fontSize:12}}>Chat</button>
+                      <button onClick={()=>setAdded({...added,[c.id]:true})} style={{...L.btn,padding:"6px 12px",fontSize:12}}>+</button>
+                    </div>
+                  }
+                </div>
+              ))}
+
+              <div style={L.secLabel}>Invita su Mamis</div>
+              {contacts.filter(c=>!c.onMamis).map(c=>(
+                <div key={c.id} style={{...L.card,...L.row}}>
+                  <div style={{width:38,height:38,borderRadius:"50%",background:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:C.textMid,fontSize:13,flexShrink:0}}>{c.init}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div>
+                    <div style={{fontSize:12,color:C.textLight}}>{c.phone||c.email||""}</div>
+                  </div>
+                  {invited[c.id]
+                    ?<div style={{...L.pill,background:"#FFF3E0",color:C.peach}}>📨 Inviato</div>
+                    :<button onClick={()=>setInvited({...invited,[c.id]:true})} style={{...L.btnOut,padding:"6px 12px",fontSize:12}}>Invita</button>
+                  }
+                </div>
+              ))}
+            </>
+          )}
+        </>
+      )}
+
+      {/* CHAT */}
+      {tab==="chat"&&(
+        <>
+          <div style={L.secLabel}>Le tue conversazioni</div>
+          {Object.keys(chats).length===0&&(
+            <div style={{...L.cardWarm,textAlign:"center",padding:28}}>
+              <div style={{fontSize:32,marginBottom:8}}>💬</div>
+              <div style={{fontSize:14,color:C.textMid}}>Nessuna conversazione ancora.<br/>Vai su Contatti per iniziare a chattare.</div>
+            </div>
+          )}
+          {MOCK_CONTACTS.filter(c=>chats[c.id]?.length>0).map(c=>{
+            const msgs=chats[c.id]||[];
+            const last=msgs[msgs.length-1];
+            return(
+              <div key={c.id} style={{...L.card,...L.row,cursor:"pointer"}} onClick={()=>setChatWith(c)}>
+                <div style={{width:40,height:40,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:14,flexShrink:0}}>{c.init}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div>
+                  <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{last?.text||""}</div>
+                </div>
+                <div style={{fontSize:11,color:C.textLight}}>{last?.time||""}</div>
+              </div>
+            );
+          })}
+          {/* Quick start chats */}
+          <div style={L.secLabel}>Inizia una conversazione</div>
+          {MOCK_CONTACTS.filter(c=>c.onMamis&&!chats[c.id]?.length).map(c=>(
+            <div key={c.id} style={{...L.card,...L.row,cursor:"pointer"}} onClick={()=>setChatWith(c)}>
+              <div style={{width:38,height:38,borderRadius:"50%",background:c.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,color:c.color,fontSize:13,flexShrink:0}}>{c.init}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>{c.name}</div>
+                <div style={{fontSize:12,color:C.textLight}}>👶 {c.bebe}</div>
+              </div>
+              <button style={{...L.btnOut,padding:"6px 14px",fontSize:12}}>Chat</button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── PLACES ────────────────────────────────────────────────────────────────────
+function PlacesScreen(){
+  const [geo,setGeo]=useState("idle");
+  const [coords,setCoords]=useState(null);
+  const [address,setAddress]=useState("");
+  const [filter,setFilter]=useState("Tutti");
+  const [places,setPlaces]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [saved,setSaved]=useState({});
+  const [expanded,setExpanded]=useState(null);
+  const [error,setError]=useState("");
+  const mapRef=useRef(null);
+  const gMapRef=useRef(null);
+  const markersRef=useRef([]);
+
+  const placeTypes={"Tutti":["restaurant","bar","cafe","park"],"Ristoranti":["restaurant"],"Bar":["bar","cafe"],"Parchi":["park"],"Gelaterie":["ice_cream"]};
+
+  useEffect(()=>{
+    if(window.google||document.querySelector('script[data-maps]'))return;
+    const s=document.createElement("script");
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=places`;
+    s.async=true;s.setAttribute('data-maps','1');
+    document.head.appendChild(s);
+  },[]);
+
+  const waitMaps=()=>new Promise((res,rej)=>{
+    let t=0;const iv=setInterval(()=>{if(window.google){clearInterval(iv);res();}if(++t>30){clearInterval(iv);rej();}},500);
+  });
+
+  const reverseGeo=async(lat,lng)=>{
+    const gc=new window.google.maps.Geocoder();
+    return new Promise(res=>{
+      gc.geocode({location:{lat,lng}},(r,s)=>{
+        if(s==="OK"&&r[0]){
+          const c=r[0].address_components.find(x=>x.types.includes("locality")||x.types.includes("administrative_area_level_3"));
+          res(c?c.long_name:r[0].formatted_address.split(",")[0]);
+        }else res("La tua posizione");
+      });
+    });
+  };
+
+  const searchPlaces=async(lat,lng,types)=>{
+    const map=new window.google.maps.Map(document.createElement("div"),{center:{lat,lng},zoom:15});
+    const svc=new window.google.maps.places.PlacesService(map);
+    const all=[];
+    for(const type of types){
+      // Search 1: baby friendly keyword
+      await new Promise(res=>{
+        svc.nearbySearch({location:{lat,lng},radius:2500,type,keyword:"baby friendly bambini seggiolone famiglia"},(results,status)=>{
+          if(status===window.google.maps.places.PlacesServiceStatus.OK&&results){
+            all.push(...results.filter(r=>r.rating&&r.rating>=4.0).map(r=>({...r,babyFriendly:true})));
+          }
+          res();
+        });
+      });
+      // Search 2: general high rated
+      await new Promise(res=>{
+        svc.nearbySearch({location:{lat,lng},radius:2000,type},(results,status)=>{
+          if(status===window.google.maps.places.PlacesServiceStatus.OK&&results){
+            all.push(...results.filter(r=>r.rating&&r.rating>=4.3));
+          }
+          res();
+        });
+      });
+    }
+    const seen=new Set();
+    return all
+      .filter(r=>{if(seen.has(r.place_id))return false;seen.add(r.place_id);return true;})
+      .map(p=>({...p,dist:p.geometry?getDistance(lat,lng,p.geometry.location.lat(),p.geometry.location.lng()):9999}))
+      .sort((a,b)=>{
+        // Baby friendly first, then by distance
+        if(a.babyFriendly&&!b.babyFriendly)return -1;
+        if(!a.babyFriendly&&b.babyFriendly)return 1;
+        return a.dist-b.dist;
+      }).slice(0,20);
+  };
+
+  const initMap=useCallback((lat,lng,results)=>{
+    if(!mapRef.current||!window.google)return;
+    const map=new window.google.maps.Map(mapRef.current,{
+      center:{lat,lng},zoom:14,
+      disableDefaultUI:true,
+      zoomControl:true,
+      styles:[
+        {featureType:"all",elementType:"labels.text.fill",stylers:[{color:"#1A1A1A"}]},
+        {featureType:"poi",elementType:"labels",stylers:[{visibility:"off"}]},
+        {featureType:"water",elementType:"geometry",stylers:[{color:"#E8E4DE"}]},
+        {featureType:"road",elementType:"geometry",stylers:[{color:"#FFFFFF"}]},
+        {featureType:"landscape",elementType:"geometry",stylers:[{color:"#FAF9F7"}]},
+      ],
+    });
+    gMapRef.current=map;
+    markersRef.current.forEach(m=>m.setMap(null));
+    markersRef.current=[];
+    new window.google.maps.Marker({position:{lat,lng},map,title:"Tu",icon:{path:window.google.maps.SymbolPath.CIRCLE,scale:10,fillColor:C.text,fillOpacity:1,strokeColor:"white",strokeWeight:3}});
+    results.slice(0,15).forEach((p,i)=>{
+      if(!p.geometry)return;
+      const m=new window.google.maps.Marker({
+        position:{lat:p.geometry.location.lat(),lng:p.geometry.location.lng()},
+        map,title:p.name,
+        label:{text:String(i+1),color:"white",fontSize:"11px",fontWeight:"500"},
+        icon:{path:window.google.maps.SymbolPath.CIRCLE,scale:13,fillColor:C.red,fillOpacity:1,strokeColor:"white",strokeWeight:2},
+      });
+      m.addListener("click",()=>setExpanded(p.place_id));
+      markersRef.current.push(m);
+    });
+  },[]);
+
+  const handleGeo=()=>{
+    setGeo("loading");setError("");
+    if(!navigator.geolocation){setError("Geolocalizzazione non disponibile");setGeo("idle");return;}
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude:lat,longitude:lng}=pos.coords;
+      setCoords({lat,lng});
+      try{
+        await waitMaps();
+        const city=await reverseGeo(lat,lng);
+        setAddress(city);setGeo("granted");
+        const results=await doSearch(lat,lng,"Tutti");
+        setTimeout(()=>initMap(lat,lng,results),300);
+      }catch(e){setError("Errore Maps. Riprova.");setGeo("idle");}
+    },()=>{setError("Abilita la posizione nelle impostazioni.");setGeo("idle");},{timeout:12000,enableHighAccuracy:true});
+  };
+
+  const doSearch=async(lat,lng,f)=>{
+    setLoading(true);setPlaces([]);
+    try{const r=await searchPlaces(lat,lng,placeTypes[f]||placeTypes["Tutti"]);setPlaces(r);setLoading(false);return r;}
+    catch(e){setLoading(false);return[];}
+  };
+
+  const handleFilter=f=>{setFilter(f);if(coords)doSearch(coords.lat,coords.lng,f);};
+
+  const fetchPhone=async(placeId)=>{
+    if(!window.google)return;
+    const map=new window.google.maps.Map(document.createElement("div"),{center:{lat:0,lng:0},zoom:1});
+    const svc=new window.google.maps.places.PlacesService(map);
+    svc.getDetails({placeId,fields:["formatted_phone_number","international_phone_number"]},(result,status)=>{
+      if(status===window.google.maps.places.PlacesServiceStatus.OK&&result){
+        const phone=result.formatted_phone_number||result.international_phone_number;
+        if(phone){
+          setPlaces(prev=>prev.map(p=>p.place_id===placeId?{...p,formatted_phone_number:phone}:p));
+        }
+      }
+    });
+  };
+
+  const navigate=place=>{
+    const lat=place.geometry.location.lat();
+    const lng=place.geometry.location.lng();
+    const ua=navigator.userAgent.toLowerCase();
+    const url=/iphone|ipad|ipod/.test(ua)
+      ?`maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
+      :`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${place.place_id}&travelmode=driving`;
+    window.open(url,"_blank");
+  };
+
+  const placeIcon=types=>{
+    if(!types)return"🍽️";
+    if(types.includes("park"))return"🌳";
+    if(types.includes("bar"))return"🍸";
+    if(types.includes("cafe"))return"☕";
+    return"🍽️";
+  };
+
+  if(geo==="idle")return(
+    <div className="fade-up">
+      <div style={{...L.card,background:C.red,border:"none",textAlign:"center",padding:"40px 24px"}}>
+        <div style={{fontSize:52,marginBottom:16,display:"inline-block",animation:"pulse 2s infinite"}}>📍</div>
+        <div style={{...T.display,fontSize:24,color:C.white,marginBottom:10}}>Locali baby friendly vicino a te</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.7,marginBottom:8}}>
+          Risultati reali da Google Maps<br/>Solo ⭐ 4–5 stelle · Con navigatore
+        </div>
+        {error&&<div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"10px 14px",fontSize:13,color:C.white,marginBottom:14,marginTop:10}}>{error}</div>}
+        <div style={{marginBottom:20}}/>
+        <button onClick={handleGeo} style={{background:C.white,color:C.red,border:"none",borderRadius:14,padding:"14px 32px",fontSize:15,fontWeight:500,cursor:"pointer"}}>
+          Attiva posizione
+        </button>
+      </div>
+    </div>
+  );
+
+  if(geo==="loading")return(
+    <div style={{textAlign:"center",padding:"90px 20px"}} className="fade-up">
+      <div style={{fontSize:52,display:"inline-block",animation:"pulse 1.2s infinite"}}>📍</div>
+      <div style={{fontSize:15,fontWeight:500,color:C.text,marginTop:20}}>Cerco la tua posizione...</div>
+      <div style={{fontSize:13,color:C.textLight,marginTop:6}}>Connessione a Google Maps</div>
+    </div>
+  );
+
+  return(
+    <div className="fade-up">
+      {/* Location */}
+      <div style={{...L.card,background:C.text,border:"none",...L.row,padding:"13px 18px",marginBottom:14}}>
+        <span style={{color:C.red}}>📍</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:500,color:C.white}}>{address}</div>
+          {coords&&<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",letterSpacing:0.5}}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
+        </div>
+        <button onClick={()=>{setGeo("idle");setPlaces([]);}} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:8,color:"rgba(255,255,255,0.8)",fontSize:12,padding:"5px 12px",cursor:"pointer",fontWeight:500}}>Cambia</button>
+      </div>
+
+      {/* Real Google Map */}
+      <div ref={mapRef} style={{width:"100%",height:190,borderRadius:20,overflow:"hidden",marginBottom:14,background:C.stone,border:`1px solid ${C.stone}`}}/>
+
+      {/* Filters */}
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
+        {["Tutti","Ristoranti","Bar","Parchi","Gelaterie"].map(f=>(
+          <div key={f} onClick={()=>handleFilter(f)} style={{...L.pill,flexShrink:0,cursor:"pointer",background:filter===f?C.text:C.stone,color:filter===f?C.white:C.textMid,transition:"all 0.15s",whiteSpace:"nowrap"}}>{f}</div>
+        ))}
+      </div>
+
+      {loading&&<div style={{textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,display:"inline-block",animation:"spin 0.8s linear infinite"}}>🔍</div><div style={{fontSize:13,color:C.textMid,marginTop:12}}>Cerco su Google Maps...</div></div>}
+
+      {!loading&&(
+        <>
+          <div style={L.secLabel}>{places.length} luoghi trovati</div>
+          {places.length===0&&<div style={{...L.cardWarm,textAlign:"center",padding:28,color:C.textMid,fontSize:14}}>Nessun locale trovato.<br/>Prova un altro filtro.</div>}
+          {places.map((r,i)=>{
+            const isOpen=r.opening_hours?.open_now;
+            const isExp=expanded===r.place_id;
+            const isSaved=saved[r.place_id];
+            const isRest=r.types?.some(t=>["restaurant","bar","cafe","food"].includes(t));
+            const phone=r.formatted_phone_number||r.international_phone_number||null;
+            return(
+              <div key={r.place_id} style={{...L.card,transition:"all 0.2s"}} className="fade-up">
+                {/* Header row */}
+                <div style={{...L.row,cursor:"pointer"}} onClick={()=>setExpanded(isExp?null:r.place_id)}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:C.red,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:500,flexShrink:0}}>{i+1}</div>
+                  <div style={{width:44,height:44,borderRadius:14,background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{placeIcon(r.types)}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6}}>
+                      <span style={{fontSize:14,fontWeight:500,color:C.text,lineHeight:1.3,flex:1}}>{r.name}</span>
+                      <span style={{fontSize:13,color:C.peach,flexShrink:0,fontWeight:500}}>⭐{r.rating?.toFixed(1)}</span>
+                    </div>
+                    <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{r.vicinity}</div>
+                    <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",flexWrap:"wrap"}}>
+                      {r.dist&&<span style={{fontSize:12,color:C.green,fontWeight:500}}>📍{mToText(r.dist)}</span>}
+                      {r.user_ratings_total&&<span style={{fontSize:11,color:C.textLight}}>({r.user_ratings_total})</span>}
+                      {r.opening_hours&&<span style={{fontSize:11,color:isOpen?C.green:C.red,fontWeight:500}}>{isOpen?"Aperto":"Chiuso"}</span>}
+                      {r.babyFriendly&&<span style={{fontSize:10,background:"#E8F5EE",color:C.green,borderRadius:8,padding:"2px 7px",fontWeight:500}}>👶 Baby</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rating bar */}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
+                  <div style={{flex:1,height:4,borderRadius:4,background:C.stone,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:4,background:C.red,width:`${((r.rating||0)/5)*100}%`,transition:"width 0.5s ease"}}/>
+                  </div>
+                  <span style={{fontSize:11,color:C.textLight,flexShrink:0}}>{r.rating?.toFixed(1)}/5</span>
+                </div>
+
+                {/* Always visible action bar */}
+                <div style={{...L.row,justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${C.stone}`}}>
+                  <div style={{...L.row,gap:16}}>
+                    {/* ❤️ CUORE */}
+                    <button onClick={e=>{e.stopPropagation();setSaved({...saved,[r.place_id]:!isSaved});}} style={{background:"none",border:"none",cursor:"pointer",padding:0,...L.row,gap:5}}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" style={{transition:"transform 0.25s",transform:isSaved?"scale(1.2)":"scale(1)"}}>
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                          fill={isSaved?C.red:"none"} stroke={isSaved?C.red:C.textLight} strokeWidth="1.8"/>
+                      </svg>
+                      <span style={{fontSize:12,color:isSaved?C.red:C.textLight}}>{isSaved?"Salvato":""}</span>
+                    </button>
+                    {/* 🧭 NAVIGA */}
+                    <button onClick={()=>navigate(r)} style={{background:"none",border:"none",cursor:"pointer",padding:0,...L.row,gap:5}}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.textLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                      </svg>
+                      <span style={{fontSize:12,color:C.textLight}}>Naviga</span>
+                    </button>
+                  </div>
+                  {/* 📞 CHIAMA */}
+                  {isRest&&(
+                    <button onClick={()=>{
+                      if(phone){window.open(`tel:${phone}`,"_self");}
+                      else{setExpanded(isExp?null:r.place_id);fetchPhone(r.place_id);}
+                    }} style={{...L.btn,padding:"8px 16px",fontSize:13,...L.row,gap:6}}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                      Chiama
+                    </button>
+                  )}
+                </div>
+
+                {/* Expanded detail */}
+                {isExp&&(
+                  <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.stone}`}} className="fade-up">
+                    {r.vicinity&&<div style={{fontSize:12,color:C.textMid,marginBottom:8}}>📍 {r.vicinity}</div>}
+                    {phone&&<div style={{fontSize:13,color:C.text,fontWeight:500,marginBottom:10}}>📞 {phone}</div>}
+                    {!phone&&isRest&&(
+                      <div style={{fontSize:12,color:C.textLight,marginBottom:10,fontStyle:"italic"}}>
+                        Tocca "Chiama" per cercare il numero
+                      </div>
+                    )}
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>navigate(r)} style={{...L.btn,flex:1,padding:"11px",fontSize:13}}>
+                        🧭 Naviga con Maps
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── BABYSITTER ────────────────────────────────────────────────────────────────
+function BabySitterScreen({userType,setUserType}){
+  const [tab,setTab]=useState("cerca");
+  const [geo,setGeo]=useState("idle");
+  const [coords,setCoords]=useState(null);
+  const [city,setCity]=useState("");
+  const [search,setSearch]=useState("");
+  const [onlyAvail,setOnlyAvail]=useState(false);
+  const [sortBy,setSortBy]=useState("dist");
+  const [expanded,setExpanded]=useState(null);
+  const [saved,setSaved]=useState({});
+  const [liked,setLiked]=useState({});
+  const [chatBS,setChatBS]=useState(null);
+  const [chatMsg,setChatMsg]=useState("");
+  const [chats,setChats]=useState({});
+  const [regForm,setRegForm]=useState({nome:"",cognome:"",eta:"",exp:"",bio:"",price:"10",phone:"",tags:[]});
+  const [registered,setRegistered]=useState(false);
+  const TAG_OPTS=["Neonati","Compiti","Primo soccorso","Gemelli","Bilingue","Attività creative","Disabilità","Notturno"];
+
+  const handleGeo=()=>{
+    setGeo("loading");
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos=>{
+        setCoords({lat:pos.coords.latitude,lng:pos.coords.longitude});
+        let c="default";
+        if(pos.coords.latitude>44)c="Milano";
+        else if(pos.coords.latitude>41&&pos.coords.latitude<42)c="Roma";
+        setCity(c==="default"?"Vicino a te":c);
+        setGeo("granted");
+      },()=>{setCity("Vicino a te");setGeo("granted");},{timeout:8000});
+    }else{setCity("Vicino a te");setGeo("granted");}
+  };
+
+  const cityKey=city==="Roma"?"Roma":city==="Milano"?"Milano":"default";
+  let bs=(MOCK_BS[cityKey]||MOCK_BS.default).filter(b=>b.name.toLowerCase().includes(search.toLowerCase())&&(!onlyAvail||b.avail));
+  if(sortBy==="rating")bs=[...bs].sort((a,b)=>b.rating-a.rating);
+  else if(sortBy==="price")bs=[...bs].sort((a,b)=>parseInt(a.price)-parseInt(b.price));
+
+  const toggleLike=id=>setLiked(p=>({...p,[id]:!p[id]}));
+  const toggleSave=id=>setSaved(p=>({...p,[id]:!p[id]}));
+  const callBS=phone=>window.open(`tel:${phone}`,"_self");
+
+  const sendChatMsg=()=>{
+    if(!chatMsg.trim()||!chatBS)return;
+    const key=chatBS.id;
+    setChats(prev=>({...prev,[key]:[...(prev[key]||[]),{id:uid(),text:chatMsg,from:"me",time:new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}]}));
+    setChatMsg("");
+    // Simulated reply after 1.5s
+    setTimeout(()=>{
+      const replies=["Ciao! Sono disponibile 😊","Quando avresti bisogno?","Perfetto, possiamo sentirci!","Sì, conosco bene la zona!","Mandami i dettagli e mi organizzo 🌸"];
+      const reply=replies[Math.floor(Math.random()*replies.length)];
+      setChats(prev=>({...prev,[key]:[...(prev[key]||[]),{id:uid(),text:reply,from:"bs",time:new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}]}));
+    },1500);
+  };
+
+  const submitReg=()=>{
+    if(!regForm.nome||!regForm.cognome||!regForm.phone)return;
+    setRegistered(true);setUserType("babysitter");setTab("cerca");
+  };
+
+  // CHAT VIEW
+  if(chatBS){
+    const msgs=chats[chatBS.id]||[];
+    return(
+      <div className="fade-up" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        {/* Chat header */}
+        <div style={{...L.card,...L.row,padding:"12px 16px",marginBottom:14}}>
+          <button onClick={()=>setChatBS(null)} style={{background:"none",border:"none",color:C.textMid,fontSize:22,cursor:"pointer",padding:0,marginRight:4}}>←</button>
+          <div style={{width:40,height:40,borderRadius:14,background:chatBS.avail?C.greenPale:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{chatBS.icon}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,fontWeight:500,color:C.text}}>{chatBS.name}</div>
+            <div style={{fontSize:11,color:chatBS.avail?C.green:C.textLight,fontWeight:500}}>{chatBS.avail?"● Disponibile":"● Non disponibile"}</div>
+          </div>
+          <button onClick={()=>callBS(chatBS.phone)} style={{...L.btn,padding:"8px 14px",fontSize:12}}>📞</button>
+        </div>
+        {/* Messages */}
+        <div style={{flex:1,overflowY:"auto",marginBottom:12}}>
+          {msgs.length===0&&(
+            <div style={{textAlign:"center",padding:"30px 20px"}}>
+              <div style={{width:56,height:56,borderRadius:18,background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 12px"}}>{chatBS.icon}</div>
+              <div style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:4}}>{chatBS.name}</div>
+              <div style={{fontSize:12,color:C.textLight,lineHeight:1.6}}>{chatBS.price} · {chatBS.dist}<br/>Inizia la conversazione 🌸</div>
+            </div>
+          )}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.from==="me"?"flex-end":"flex-start",marginBottom:8,padding:"0 4px"}}>
+              {m.from==="bs"&&<div style={{width:28,height:28,borderRadius:10,background:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,marginRight:6,alignSelf:"flex-end"}}>{chatBS.icon}</div>}
+              <div style={{background:m.from==="me"?C.red:C.white,color:m.from==="me"?C.white:C.text,padding:"10px 14px",borderRadius:m.from==="me"?"18px 18px 4px 18px":"18px 18px 18px 4px",maxWidth:"72%",fontSize:14,lineHeight:1.5,border:m.from==="bs"?`1px solid ${C.stone}`:"none"}}>
+                {m.text}
+                <div style={{fontSize:10,color:m.from==="me"?"rgba(255,255,255,0.6)":C.textLight,marginTop:4,textAlign:"right"}}>{m.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Input */}
+        <div style={{...L.row}}>
+          <input style={{...L.input,flex:1,marginBottom:0,borderRadius:14}} placeholder={`Scrivi a ${chatBS.name}...`} value={chatMsg} onChange={e=>setChatMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChatMsg()}/>
+          <button onClick={sendChatMsg} style={{...L.btn,padding:"13px 18px",marginLeft:8,flexShrink:0}}>↩</button>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",background:C.stone,borderRadius:14,padding:4,marginBottom:16,gap:4}}>
+        {[{id:"cerca",l:"Cerca"},{id:"registrati",l:"Diventa BS"}].map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,border:"none",borderRadius:12,padding:"9px 6px",background:tab===t.id?C.white:"transparent",color:tab===t.id?C.text:C.textMid,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.2s",boxShadow:tab===t.id?"0 1px 6px rgba(0,0,0,0.08)":"none"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {tab==="cerca"&&(
+        <>
+          {geo==="idle"&&(
+            <div>
+              <div style={{...L.card,background:C.text,border:"none",textAlign:"center",padding:"38px 24px"}}>
+                <div style={{fontSize:52,marginBottom:14,display:"inline-block",animation:"pulse 2s infinite"}}>👶</div>
+                <div style={{...T.display,fontSize:24,color:C.white,marginBottom:10}}>Baby sitter vicino a te</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",lineHeight:1.7,marginBottom:22}}>Profili verificati · Geolocalizzate · Contattabili direttamente</div>
+                <button onClick={handleGeo} style={{background:C.red,color:C.white,border:"none",borderRadius:14,padding:"13px 30px",fontSize:15,fontWeight:500,cursor:"pointer"}}>
+                  Cerca nella mia zona
+                </button>
+              </div>
+            </div>
+          )}
+          {geo==="loading"&&<div style={{textAlign:"center",padding:"80px 20px"}}><div style={{fontSize:52,display:"inline-block",animation:"pulse 1.2s infinite"}}>👶</div><div style={{fontSize:15,fontWeight:500,color:C.text,marginTop:20}}>Cerco baby sitter vicino a te...</div></div>}
+          {geo==="granted"&&(
+            <>
+              <div style={{...L.card,background:C.text,border:"none",...L.row,padding:"13px 18px",marginBottom:14}}>
+                <span style={{color:C.red}}>📍</span>
+                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:C.white}}>Zona: {city}</div>{coords&&<div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}</div>}</div>
+                <button onClick={()=>setGeo("idle")} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:8,color:"rgba(255,255,255,0.8)",fontSize:12,padding:"5px 12px",cursor:"pointer",fontWeight:500}}>Cambia</button>
+              </div>
+              <div style={{position:"relative",marginBottom:10}}>
+                <input style={{...L.input,paddingLeft:40,marginBottom:0}} placeholder="Cerca per nome..." value={search} onChange={e=>setSearch(e.target.value)}/>
+                <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:C.textLight,fontSize:16}}>🔍</span>
+              </div>
+              <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+                <div onClick={()=>setOnlyAvail(!onlyAvail)} style={{...L.pill,cursor:"pointer",background:onlyAvail?C.greenPale:C.stone,color:onlyAvail?C.green:C.textMid,border:onlyAvail?`1.5px solid ${C.green}`:"1.5px solid transparent",transition:"all 0.2s"}}>
+                  Disponibile ora
+                </div>
+                <select onChange={e=>setSortBy(e.target.value)} value={sortBy} style={{...L.input,marginBottom:0,width:"auto",flex:1,fontSize:12,padding:"7px 12px"}}>
+                  <option value="dist">Distanza</option>
+                  <option value="rating">Valutazione</option>
+                  <option value="price">Prezzo</option>
+                </select>
+              </div>
+              <div style={L.secLabel}>{bs.length} baby sitter disponibili</div>
+              {bs.map(b=>(
+                <div key={b.id} style={L.card} className="fade-up">
+                  <div style={{...L.row,cursor:"pointer"}} onClick={()=>setExpanded(expanded===b.id?null:b.id)}>
+                    <div style={{position:"relative",flexShrink:0}}>
+                      <div style={{width:52,height:52,borderRadius:16,background:b.avail?C.greenPale:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{b.icon}</div>
+                      {b.verified&&<div style={{position:"absolute",bottom:-2,right:-2,background:C.peach,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,border:"2px solid white"}}>✓</div>}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                        <span style={{fontSize:15,fontWeight:500,color:C.text}}>{b.name}</span>
+                        <span style={{fontSize:13,color:C.peach,fontWeight:500}}>⭐{b.rating}</span>
+                      </div>
+                      <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{b.age} anni · {b.exp}</div>
+                      <div style={{display:"flex",gap:10,marginTop:3,flexWrap:"wrap"}}>
+                        <span style={{fontSize:12,color:C.green,fontWeight:500}}>📍{b.dist}</span>
+                        <span style={{fontSize:13,fontWeight:500,color:C.red}}>{b.price}</span>
+                        <span style={{fontSize:12,color:b.avail?C.green:C.red,fontWeight:500}}>{b.avail?"Disponibile":"Non disp."}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:5,marginTop:10,flexWrap:"wrap"}}>
+                    {b.tags.map((t,j)=><span key={j} style={{...L.pill,background:C.redPale,color:C.red,fontSize:11,padding:"3px 10px"}}>{t}</span>)}
+                    {b.lingue.map((l,j)=><span key={j} style={{...L.pill,background:C.stone,color:C.textMid,fontSize:11,padding:"3px 10px"}}>{l}</span>)}
+                  </div>
+                  {/* Like + Chat row */}
+                  <div style={{borderTop:`1px solid ${C.stone}`,marginTop:12,paddingTop:10,...L.row,justifyContent:"space-between"}}>
+                    <div style={{...L.row,gap:16}}>
+                      {/* ❤️ CUORE LIKE */}
+                      <button onClick={e=>{e.stopPropagation();toggleLike(b.id);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,...L.row,gap:6,transition:"all 0.2s"}}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" style={{transition:"all 0.25s",transform:liked[b.id]?"scale(1.2)":"scale(1)"}}>
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                            fill={liked[b.id]?C.red:"none"}
+                            stroke={liked[b.id]?C.red:C.textLight}
+                            strokeWidth="1.8"/>
+                        </svg>
+                        <span style={{fontSize:13,color:liked[b.id]?C.red:C.textLight,fontWeight:liked[b.id]?500:400}}>
+                          {(b.reviews||0)+(liked[b.id]?1:0)}
+                        </span>
+                      </button>
+                      {/* 💬 CHAT */}
+                      <button onClick={e=>{e.stopPropagation();setChatBS(b);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,...L.row,gap:6}}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.textLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span style={{fontSize:13,color:C.textLight}}>
+                          {(chats[b.id]||[]).length>0?(chats[b.id]||[]).length:"Chat"}
+                        </span>
+                      </button>
+                    </div>
+                    {/* 🔖 SALVA */}
+                    <button onClick={e=>{e.stopPropagation();toggleSave(b.id);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,...L.row,gap:5}}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill={saved[b.id]?C.red:"none"} stroke={saved[b.id]?C.red:C.textLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      <span style={{fontSize:11,color:saved[b.id]?C.red:C.textLight}}>{saved[b.id]?"Salvata":""}</span>
+                    </button>
+                  </div>
+
+                  {expanded===b.id&&(
+                    <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${C.stone}`}} className="fade-up">
+                      <p style={{fontSize:13,color:C.textMid,fontStyle:"italic",marginBottom:14,lineHeight:1.6}}>"{b.bio}"</p>
+                      <div style={{...L.row,marginBottom:12,gap:16}}>
+                        <span style={{fontSize:12,color:C.textLight}}>📞 {b.phone}</span>
+                        <span style={{fontSize:12,color:C.textLight}}>💰 {b.price}</span>
+                      </div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>setChatBS(b)} style={{...L.btn,flex:2,padding:"11px",fontSize:13}}>
+                          💬 Chatta
+                        </button>
+                        <button onClick={()=>callBS(b.phone)} style={{...L.btnOut,flex:1,padding:"11px",fontSize:13}}>
+                          📞 Chiama
+                        </button>
+                        <button onClick={()=>toggleSave(b.id)} style={{...L.btnOut,padding:"11px 14px",fontSize:16,background:saved[b.id]?C.redPale:"transparent",borderColor:saved[b.id]?C.red:undefined}}>
+                          {saved[b.id]?"❤️":"🤍"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </>
+      )}
+
+      {tab==="registrati"&&(
+        <>
+          {registered?(
+            <div style={{...L.card,background:C.green,border:"none",textAlign:"center",padding:"36px 24px"}} className="scale-in">
+              <div style={{fontSize:52,marginBottom:14}}>🎉</div>
+              <div style={{...T.display,fontSize:22,color:C.white,marginBottom:10}}>Sei registrata!</div>
+              <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.65}}>Il tuo profilo è visibile alle mamme nella tua zona.</div>
+              <button onClick={()=>{setRegistered(false);setRegForm({nome:"",cognome:"",eta:"",exp:"",bio:"",price:"10",phone:"",tags:[]});}} style={{background:C.white,color:C.green,border:"none",borderRadius:14,padding:"12px 24px",fontSize:14,fontWeight:500,cursor:"pointer",marginTop:18}}>
+                Modifica profilo
+              </button>
+            </div>
+          ):(
+            <>
+              <div style={{...L.card,background:C.text,border:"none",padding:"22px 20px",marginBottom:14}}>
+                <div style={{...T.display,fontSize:20,color:C.white,marginBottom:8}}>Diventa baby sitter</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",lineHeight:1.65}}>Raggiungi famiglie nella tua zona. Il tuo profilo sarà verificato entro 24 ore.</div>
+              </div>
+              <div style={L.card}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:0}}>
+                  <input style={{...L.input,marginBottom:0}} placeholder="Nome *" value={regForm.nome} onChange={e=>setRegForm({...regForm,nome:e.target.value})}/>
+                  <input style={{...L.input,marginBottom:0}} placeholder="Cognome *" value={regForm.cognome} onChange={e=>setRegForm({...regForm,cognome:e.target.value})}/>
+                </div>
+                <div style={{marginTop:10}}/>
+                <input style={L.input} placeholder="Telefono *" value={regForm.phone} onChange={e=>setRegForm({...regForm,phone:e.target.value})}/>
+                <input style={L.input} placeholder="Età" value={regForm.eta} onChange={e=>setRegForm({...regForm,eta:e.target.value})}/>
+                <input style={L.input} placeholder="Anni di esperienza" value={regForm.exp} onChange={e=>setRegForm({...regForm,exp:e.target.value})}/>
+                <textarea style={{...L.input,height:90,resize:"none"}} placeholder="Presentati alle mamme..." value={regForm.bio} onChange={e=>setRegForm({...regForm,bio:e.target.value})}/>
+                <select style={L.input} value={regForm.price} onChange={e=>setRegForm({...regForm,price:e.target.value})}>
+                  {["8","10","12","14","16","18","20"].map(p=><option key={p} value={p}>{p}€/ora</option>)}
+                </select>
+              </div>
+              <div style={L.secLabel}>Specializzazioni</div>
+              <div style={{...L.cardWarm,display:"flex",flexWrap:"wrap",gap:8}}>
+                {TAG_OPTS.map(t=>{
+                  const sel=regForm.tags.includes(t);
+                  return<div key={t} onClick={()=>setRegForm({...regForm,tags:sel?regForm.tags.filter(x=>x!==t):[...regForm.tags,t]})} style={{...L.pill,cursor:"pointer",background:sel?C.text:C.stone,color:sel?C.white:C.textMid,transition:"all 0.15s"}}>{t}</div>;
+                })}
+              </div>
+              <div style={L.secLabel}>Posizione GPS</div>
+              <div style={L.card}>
+                <div style={{fontSize:13,color:C.textMid,marginBottom:12,lineHeight:1.6}}>La tua posizione GPS sarà usata per mostrarti alle mamme vicino a te. Non condivisa con terzi.</div>
+                <button onClick={()=>{if(navigator.geolocation)navigator.geolocation.getCurrentPosition(()=>alert("✅ Posizione rilevata! Apparirai alle mamme vicino a te."),()=>alert("⚠️ Abilita la posizione nelle impostazioni."));}} style={{...L.btnDark,width:"100%"}}>
+                  📍 Condividi posizione
+                </button>
+              </div>
+              <button onClick={submitReg} style={{...L.btn,width:"100%",padding:"15px",fontSize:15,marginTop:6}}>
+                Registrati come Baby Sitter
+              </button>
+              <div style={{fontSize:11,color:C.textLight,textAlign:"center",marginTop:10,padding:"0 12px",lineHeight:1.65}}>
+                Registrandoti accetti i Termini di Servizio Mamis.
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── CASA ──────────────────────────────────────────────────────────────────────
+function CasaScreen({shopping,setShopping,chores,setChores}){
+  const [tab,setTab]=useState("spesa");
+  const [showAddItem,setShowAddItem]=useState(false);
+  const [showAddChore,setShowAddChore]=useState(false);
+  const [newItem,setNewItem]=useState({item:"",qty:"1 pz",cat:CAT_OPTS[0]});
+  const [newChore,setNewChore]=useState({task:"",icon:"🧹",day:"Oggi"});
+  const [weekNum,setWeekNum]=useState(0);
+  const [grocAdded,setGrocAdded]=useState(false);
+
+  const addItem=()=>{if(!newItem.item.trim())return;setShopping(p=>[...p,{id:uid(),...newItem,done:false}]);setNewItem({item:"",qty:"1 pz",cat:CAT_OPTS[0]});setShowAddItem(false);};
+  const addChore=()=>{if(!newChore.task.trim())return;setChores(p=>[...p,{id:uid(),...newChore,done:false}]);setNewChore({task:"",icon:"🧹",day:"Oggi"});setShowAddChore(false);};
+  const toggleShop=id=>setShopping(p=>p.map(s=>s.id===id?{...s,done:!s.done}:s));
+  const delShop=id=>setShopping(p=>p.filter(s=>s.id!==id));
+  const toggleChore=id=>setChores(p=>p.map(c=>c.id===id?{...c,done:!c.done}:c));
+  const delChore=id=>setChores(p=>p.filter(c=>c.id!==id));
+  const addMenuGroceries=()=>{
+    const ex=new Set(shopping.map(s=>s.item));
+    setShopping(p=>[...p,...GROCERIES.filter(g=>!ex.has(g.item)).map(g=>({id:uid(),...g,done:false}))]);
+    setGrocAdded(true);
+  };
+
+  const cats=[...new Set(shopping.map(s=>s.cat))];
+  const menu=MENU_4W[weekNum];
+
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",background:C.stone,borderRadius:14,padding:4,marginBottom:16,gap:4}}>
+        {[{id:"spesa",l:"Spesa"},{id:"casa",l:"Faccende"},{id:"menu",l:"Menù"}].map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,border:"none",borderRadius:12,padding:"9px 6px",background:tab===t.id?C.white:"transparent",color:tab===t.id?C.text:C.textMid,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.2s",boxShadow:tab===t.id?"0 1px 6px rgba(0,0,0,0.08)":"none"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {tab==="spesa"&&(
+        <>
+          <div style={{...L.row,justifyContent:"space-between",marginBottom:14}}>
+            <div>
+              <span style={{fontSize:22,fontWeight:300,color:C.red}}>{shopping.filter(s=>!s.done).length}</span>
+              <span style={{fontSize:13,color:C.textLight}}> da comprare</span>
+            </div>
+            <button onClick={()=>setShowAddItem(true)} style={{...L.btn,padding:"8px 18px",fontSize:13}}>+ Aggiungi</button>
+          </div>
+          {cats.map(cat=>{
+            const items=shopping.filter(s=>s.cat===cat);
+            if(!items.length)return null;
+            return(
+              <div key={cat} style={{marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:500,color:C.textLight,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{cat}</div>
+                {items.map(s=>(
+                  <div key={s.id} style={{...L.card,...L.row,padding:"12px 16px",opacity:s.done?0.45:1,marginBottom:8,transition:"opacity 0.2s"}} className="fade-up">
+                    <div onClick={()=>toggleShop(s.id)} style={{width:24,height:24,borderRadius:7,background:s.done?C.green:"transparent",border:`1.5px solid ${s.done?C.green:C.stone}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.2s"}}>
+                      {s.done&&<span style={{color:"white",fontSize:13}}>✓</span>}
+                    </div>
+                    <span onClick={()=>toggleShop(s.id)} style={{fontSize:14,flex:1,textDecoration:s.done?"line-through":"none",color:C.text,cursor:"pointer"}}>{s.item}</span>
+                    <span style={{fontSize:12,color:C.textLight,marginRight:8}}>{s.qty}</span>
+                    <button onClick={()=>delShop(s.id)} style={{background:"none",border:"none",color:C.textLight,fontSize:18,cursor:"pointer",padding:2}}>×</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {shopping.length===0&&<div style={{...L.cardWarm,textAlign:"center",padding:28,color:C.textMid,fontSize:14}}>Lista vuota.<br/>Tocca + per aggiungere.</div>}
+          {showAddItem&&(
+            <Modal onClose={()=>setShowAddItem(false)} title="Nuovo articolo">
+              <input style={L.input} placeholder="Nome articolo..." value={newItem.item} onChange={e=>setNewItem({...newItem,item:e.target.value})}/>
+              <input style={L.input} placeholder="Quantità (es. 2 L)" value={newItem.qty} onChange={e=>setNewItem({...newItem,qty:e.target.value})}/>
+              <select style={{...L.input,marginBottom:14}} value={newItem.cat} onChange={e=>setNewItem({...newItem,cat:e.target.value})}>
+                {CAT_OPTS.map(c=><option key={c}>{c}</option>)}
+              </select>
+              <div style={{display:"flex",gap:10}}><button onClick={addItem} style={{...L.btn,flex:1}}>Aggiungi</button><button onClick={()=>setShowAddItem(false)} style={{...L.btnOut,flex:1}}>Annulla</button></div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {tab==="casa"&&(
+        <>
+          <div style={{...L.row,justifyContent:"space-between",marginBottom:14}}>
+            <div><span style={{fontSize:22,fontWeight:300,color:C.red}}>{chores.filter(c=>!c.done).length}</span><span style={{fontSize:13,color:C.textLight}}> da fare</span></div>
+            <button onClick={()=>setShowAddChore(true)} style={{...L.btn,padding:"8px 18px",fontSize:13}}>+ Aggiungi</button>
+          </div>
+          {chores.map(c=>(
+            <div key={c.id} style={{...L.card,...L.row,opacity:c.done?0.45:1,transition:"opacity 0.2s"}} className="fade-up">
+              <span style={{fontSize:22}}>{c.icon}</span>
+              <div style={{flex:1,cursor:"pointer"}} onClick={()=>toggleChore(c.id)}>
+                <div style={{fontSize:14,fontWeight:c.done?400:500,color:C.text,textDecoration:c.done?"line-through":"none"}}>{c.task}</div>
+                <div style={{fontSize:12,color:C.textLight,marginTop:2}}>{c.day}</div>
+              </div>
+              <div onClick={()=>toggleChore(c.id)} style={{width:26,height:26,borderRadius:9,background:c.done?C.green:"transparent",border:`1.5px solid ${c.done?C.green:C.stone}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginRight:8,transition:"all 0.2s"}}>
+                {c.done&&<span style={{color:"white",fontSize:13}}>✓</span>}
+              </div>
+              <button onClick={()=>delChore(c.id)} style={{background:"none",border:"none",color:C.textLight,fontSize:18,cursor:"pointer",padding:2}}>×</button>
+            </div>
+          ))}
+          {chores.length===0&&<div style={{...L.cardWarm,textAlign:"center",padding:28,color:C.textMid,fontSize:14}}>Nessuna faccenda 🎉</div>}
+          {showAddChore&&(
+            <Modal onClose={()=>setShowAddChore(false)} title="Nuova faccenda">
+              <input style={L.input} placeholder="Cosa devi fare?" value={newChore.task} onChange={e=>setNewChore({...newChore,task:e.target.value})}/>
+              <select style={L.input} value={newChore.icon} onChange={e=>setNewChore({...newChore,icon:e.target.value})}>
+                {["🧹","👕","👔","🚿","🛏️","🍽️","🪟","🗑️","🌿","🧺","🪣"].map(ic=><option key={ic} value={ic}>{ic}</option>)}
+              </select>
+              <select style={{...L.input,marginBottom:14}} value={newChore.day} onChange={e=>setNewChore({...newChore,day:e.target.value})}>
+                {["Oggi","Domani","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"].map(d=><option key={d}>{d}</option>)}
+              </select>
+              <div style={{display:"flex",gap:10}}><button onClick={addChore} style={{...L.btn,flex:1}}>Aggiungi</button><button onClick={()=>setShowAddChore(false)} style={{...L.btnOut,flex:1}}>Annulla</button></div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {tab==="menu"&&(
+        <>
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[1,2,3,4].map(w=>(
+              <div key={w} onClick={()=>setWeekNum(w-1)} style={{flex:1,textAlign:"center",padding:"10px 4px",borderRadius:14,cursor:"pointer",background:weekNum===w-1?C.text:C.stone,color:weekNum===w-1?C.white:C.textMid,fontSize:13,fontWeight:500,transition:"all 0.2s"}}>
+                Sett.{w}
+              </div>
+            ))}
+          </div>
+          {!grocAdded?(
+            <button onClick={addMenuGroceries} style={{...L.btnOut,width:"100%",marginBottom:14,padding:"12px"}}>
+              🛒 Aggiungi ingredienti alla spesa
+            </button>
+          ):(
+            <div style={{...L.card,background:C.greenPale,border:`1px solid ${C.green}22`,...L.row,marginBottom:14}}>
+              <span>✅</span><span style={{fontSize:13,color:C.green,fontWeight:500}}>Ingredienti aggiunti alla spesa</span>
+            </div>
+          )}
+          {menu.map((m,i)=>{
+            const isFri=m.d==="Ven";
+            return(
+              <div key={i} style={{...L.card,border:isFri?`1.5px solid ${C.peach}`:undefined,background:isFri?"#FFFAF5":undefined,marginBottom:10}}>
+                <div style={{...L.row,justifyContent:"space-between",marginBottom:8}}>
+                  <span style={{fontSize:13,fontWeight:500,color:isFri?C.peach:C.textMid,textTransform:"uppercase",letterSpacing:1}}>{m.d}</span>
+                  {isFri&&<span style={{fontSize:18}}>🥂</span>}
+                </div>
+                <div style={{fontSize:13,color:C.text,marginBottom:4}}>🌞 {m.p}</div>
+                <div style={{fontSize:13,color:isFri?C.peach:C.textMid,fontWeight:isFri?500:400,fontStyle:isFri?"italic":"normal"}}>🌙 {m.c}</div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── PROFILE ───────────────────────────────────────────────────────────────────
+function ProfileScreen({notifSettings,setNotifSettings,userType}){
+  const [tab,setTab]=useState("profilo");
+  const [editing,setEditing]=useState(false);
+  const [saved,setSaved]=useState(false);
+  const [showAvatarPicker,setShowAvatarPicker]=useState(false);
+  const [avatar,setAvatar]=useState("👩‍💼");
+  const AVATARS=["👩‍💼","👩","👩‍🦰","👩‍🦱","👩‍🦳","👩‍🦲","👸","🧕","👩‍🍳","👩‍💻","👩‍🎨","👩‍🏫","🦸‍♀️","🧚‍♀️","🌸"];
+  const [profile,setProfile]=useState({
+    nome:"Sara",cognome:"Conti",email:"sara.conti@email.it",
+    telefono:"+39 333 123 4567",professione:"Marketing Manager",
+    citta:"Milano",bio:"Mamma di Luca e Sofia, cerco di fare del mio meglio ogni giorno 🌸",
+    figli:[{nome:"Luca",eta:"6"},{ nome:"Sofia",eta:"3"}],
+  });
+  const [geoConsent,setGeoConsent]=useState(false);
+  const [geoStatus,setGeoStatus]=useState("idle"); // idle | granted | denied
+  const [showAddFiglio,setShowAddFiglio]=useState(false);
+  const [nuovoFiglio,setNuovoFiglio]=useState({nome:"",eta:""});
+  const [settingOpen,setSettingOpen]=useState(null);
+  const [lingua,setLingua]=useState("Italiano");
+  const [tema,setTema]=useState("Chiaro");
+  const [privacy,setPrivacy]=useState({profilo_pubblico:true,mostra_posizione:false,mostra_figli:true});
+
+  const saveProfile=()=>{setSaved(true);setEditing(false);setTimeout(()=>setSaved(false),2500);};
+
+  const requestGeo=()=>{
+    if(!navigator.geolocation){setGeoStatus("denied");return;}
+    navigator.geolocation.getCurrentPosition(
+      ()=>{setGeoStatus("granted");setGeoConsent(true);},
+      ()=>{setGeoStatus("denied");setGeoConsent(false);},
+      {timeout:8000}
+    );
+  };
+
+  const revokeGeo=()=>{setGeoConsent(false);setGeoStatus("idle");};
+
+  const addFiglio=()=>{
+    if(!nuovoFiglio.nome.trim())return;
+    setProfile({...profile,figli:[...profile.figli,{...nuovoFiglio}]});
+    setNuovoFiglio({nome:"",eta:""});setShowAddFiglio(false);
+  };
+  const removeFiglio=i=>setProfile({...profile,figli:profile.figli.filter((_,j)=>j!==i)});
+
+  const tabs=[{id:"profilo",l:"Profilo"},{id:"impostazioni",l:"Impostazioni"},{id:"notifiche",l:"Notifiche"}];
+
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",background:C.stone,borderRadius:14,padding:4,marginBottom:16,gap:4}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,border:"none",borderRadius:12,padding:"9px 4px",background:tab===t.id?C.white:"transparent",color:tab===t.id?C.text:C.textMid,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.2s",boxShadow:tab===t.id?"0 1px 6px rgba(0,0,0,0.08)":"none",whiteSpace:"nowrap"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {/* ── PROFILO ── */}
+      {tab==="profilo"&&(
+        <>
+          {/* Avatar card */}
+          <div style={{...L.card,background:C.red,border:"none",padding:"24px 22px",textAlign:"center"}}>
+            <div onClick={()=>setShowAvatarPicker(true)} style={{width:72,height:72,borderRadius:"50%",background:"rgba(255,255,255,0.2)",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,cursor:"pointer",border:"3px solid rgba(255,255,255,0.5)",position:"relative"}}>
+              {avatar}
+              <div style={{position:"absolute",bottom:-2,right:-2,width:22,height:22,borderRadius:"50%",background:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✏️</div>
+            </div>
+            {!editing?(
+              <>
+                <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:20,color:C.white}}>{profile.nome} {profile.cognome}</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",marginTop:4}}>{profile.professione} · {profile.citta}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginTop:4,lineHeight:1.5}}>{profile.bio}</div>
+                {userType==="babysitter"&&<div style={{marginTop:10,background:"rgba(255,255,255,0.2)",borderRadius:10,padding:"5px 14px",display:"inline-block",fontSize:12,color:C.white}}>✅ Baby Sitter verificata</div>}
+                <button onClick={()=>setEditing(true)} style={{marginTop:14,background:"rgba(255,255,255,0.2)",color:C.white,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"8px 22px",fontSize:13,cursor:"pointer",fontWeight:500}}>
+                  ✏️ Modifica profilo
+                </button>
+              </>
+            ):(
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginBottom:4}}>Tocca la foto per cambiarla</div>
+            )}
+          </div>
+
+          {/* AVATAR PICKER */}
+          {showAvatarPicker&&(
+            <Modal onClose={()=>setShowAvatarPicker(false)} title="Scegli il tuo avatar">
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:16}}>
+                {AVATARS.map(a=>(
+                  <div key={a} onClick={()=>{setAvatar(a);setShowAvatarPicker(false);}} style={{width:"100%",aspectRatio:"1",borderRadius:14,background:avatar===a?C.red:C.stone,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,cursor:"pointer",transition:"all 0.15s",border:avatar===a?`2px solid ${C.red}`:"2px solid transparent"}}>
+                    {a}
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>setShowAvatarPicker(false)} style={{...L.btnOut,width:"100%"}}>Annulla</button>
+            </Modal>
+          )}
+
+          {/* EDIT FORM */}
+          {editing&&(
+            <div style={L.card} className="scale-in">
+              <div style={{fontSize:11,fontWeight:500,color:C.textLight,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>Dati personali</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:0}}>
+                <input style={{...L.input,marginBottom:0}} placeholder="Nome" value={profile.nome} onChange={e=>setProfile({...profile,nome:e.target.value})}/>
+                <input style={{...L.input,marginBottom:0}} placeholder="Cognome" value={profile.cognome} onChange={e=>setProfile({...profile,cognome:e.target.value})}/>
+              </div>
+              <div style={{marginTop:10}}/>
+              <input style={L.input} placeholder="Email" type="email" value={profile.email} onChange={e=>setProfile({...profile,email:e.target.value})}/>
+              <input style={L.input} placeholder="Telefono" type="tel" value={profile.telefono} onChange={e=>setProfile({...profile,telefono:e.target.value})}/>
+              <input style={L.input} placeholder="Professione" value={profile.professione} onChange={e=>setProfile({...profile,professione:e.target.value})}/>
+              <input style={L.input} placeholder="Città" value={profile.citta} onChange={e=>setProfile({...profile,citta:e.target.value})}/>
+              <textarea style={{...L.input,height:80,resize:"none"}} placeholder="Una breve presentazione..." value={profile.bio} onChange={e=>setProfile({...profile,bio:e.target.value})}/>
+              <div style={{display:"flex",gap:10,marginTop:4}}>
+                <button onClick={saveProfile} style={{...L.btn,flex:1}}>✓ Salva</button>
+                <button onClick={()=>setEditing(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+              </div>
+            </div>
+          )}
+
+          {saved&&(
+            <div style={{...L.card,background:C.greenPale,border:`1px solid ${C.green}33`,...L.row,marginBottom:14}} className="scale-in">
+              <span>✅</span><span style={{fontSize:13,color:C.green,fontWeight:500}}>Profilo salvato!</span>
+            </div>
+          )}
+
+          {/* Figli */}
+          <div style={L.secLabel}>I tuoi figli</div>
+          {profile.figli.map((f,i)=>(
+            <div key={i} style={{...L.card,...L.row,padding:"13px 18px"}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:C.redPale,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👶</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>{f.nome}</div>
+                <div style={{fontSize:12,color:C.textLight}}>{f.eta} anni</div>
+              </div>
+              <button onClick={()=>removeFiglio(i)} style={{background:"none",border:"none",color:C.textLight,fontSize:18,cursor:"pointer"}}>×</button>
+            </div>
+          ))}
+          <button onClick={()=>setShowAddFiglio(true)} style={{...L.btnOut,width:"100%",padding:"11px",marginBottom:4}}>+ Aggiungi figlio/a</button>
+
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:4}}>
+            {[{l:"Impegni",v:"248"},{l:"Spesa",v:"52"},{l:"Amiche",v:"14"},{l:"Locali",v:"9"}].map((s,i)=>(
+              <div key={i} style={{...L.cardWarm,textAlign:"center",marginBottom:0,padding:"14px 8px"}}>
+                <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:24,color:C.red}}>{s.v}</div>
+                <div style={{fontSize:11,color:C.textLight,marginTop:3,letterSpacing:1,textTransform:"uppercase"}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {showAddFiglio&&(
+            <Modal onClose={()=>setShowAddFiglio(false)} title="Aggiungi figlio/a">
+              <input style={L.input} placeholder="Nome" value={nuovoFiglio.nome} onChange={e=>setNuovoFiglio({...nuovoFiglio,nome:e.target.value})}/>
+              <input style={L.input} placeholder="Età (anni)" type="number" value={nuovoFiglio.eta} onChange={e=>setNuovoFiglio({...nuovoFiglio,eta:e.target.value})}/>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={addFiglio} style={{...L.btn,flex:1}}>Aggiungi</button>
+                <button onClick={()=>setShowAddFiglio(false)} style={{...L.btnOut,flex:1}}>Annulla</button>
+              </div>
+            </Modal>
+          )}
+        </>
+      )}
+
+      {/* ── IMPOSTAZIONI ── */}
+      {tab==="impostazioni"&&(
+        <>
+          {/* GEOLOCALIZZAZIONE */}
+          <div style={L.secLabel}>📍 Geolocalizzazione</div>
+          <div style={L.card}>
+            <div style={{fontSize:13,color:C.textMid,lineHeight:1.65,marginBottom:14}}>
+              Mamis usa la tua posizione GPS per trovare locali baby friendly, baby sitter e mamme vicino a te. Puoi revocare il consenso in qualsiasi momento.
+            </div>
+            {geoStatus==="granted"?(
+              <div>
+                <div style={{...L.row,marginBottom:12,background:C.greenPale,borderRadius:12,padding:"10px 14px"}}>
+                  <span style={{fontSize:18}}>✅</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:500,color:C.green}}>Posizione attiva</div>
+                    <div style={{fontSize:11,color:C.green,opacity:0.8}}>La tua posizione è condivisa con Mamis</div>
+                  </div>
+                </div>
+                <button onClick={revokeGeo} style={{...L.btnOut,width:"100%",padding:"11px",color:C.red,borderColor:C.red}}>
+                  Revoca consenso geolocalizzazione
+                </button>
+              </div>
+            ):geoStatus==="denied"?(
+              <div>
+                <div style={{...L.row,marginBottom:12,background:"#FFF0F0",borderRadius:12,padding:"10px 14px"}}>
+                  <span style={{fontSize:18}}>⚠️</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:500,color:C.red}}>Accesso negato</div>
+                    <div style={{fontSize:11,color:C.textLight}}>Abilita la posizione nelle impostazioni del telefono</div>
+                  </div>
+                </div>
+                <button onClick={requestGeo} style={{...L.btn,width:"100%"}}>Riprova</button>
+              </div>
+            ):(
+              <div>
+                <div style={{...L.row,marginBottom:14,padding:"4px 0"}}>
+                  <span style={{fontSize:16}}>📍</span>
+                  <div style={{flex:1,fontSize:13,color:C.text}}>Consenti l'accesso alla posizione</div>
+                  <div onClick={()=>requestGeo()} style={{width:50,height:28,borderRadius:14,cursor:"pointer",position:"relative",background:geoConsent?C.red:C.stone,transition:"background 0.25s",flexShrink:0}} >
+                    <div style={{position:"absolute",top:4,left:geoConsent?26:4,width:20,height:20,borderRadius:"50%",background:C.white,transition:"left 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}/>
+                  </div>
+                </div>
+                <button onClick={requestGeo} style={{...L.btn,width:"100%"}}>
+                  📍 Attiva geolocalizzazione
+                </button>
+              </div>
+            )}
+            <div style={{fontSize:11,color:C.textLight,marginTop:12,lineHeight:1.65,padding:"0 2px"}}>
+              🔒 La tua posizione non viene mai venduta o condivisa con terzi. Viene usata solo all'interno di Mamis.
+            </div>
+          </div>
+
+          {/* PRIVACY */}
+          <div style={L.secLabel}>🔒 Privacy</div>
+          <div style={L.card}>
+            <Toggle on={privacy.profilo_pubblico} onChange={v=>setPrivacy({...privacy,profilo_pubblico:v})} label="Profilo visibile alla community" sub="Le altre mamme possono trovarti"/>
+            <Toggle on={privacy.mostra_posizione} onChange={v=>setPrivacy({...privacy,mostra_posizione:v})} label="Mostra la tua città nel profilo" sub="Solo la città, non l'indirizzo"/>
+            <Toggle on={privacy.mostra_figli} onChange={v=>setPrivacy({...privacy,mostra_figli:v})} label="Mostra i profili dei figli" sub="Nome ed età dei tuoi bambini"/>
+          </div>
+
+          {/* LINGUA */}
+          <div style={L.secLabel}>🌍 Lingua e aspetto</div>
+          <div style={L.card}>
+            <div style={{...L.row,justifyContent:"space-between",padding:"10px 0",borderBottom:`1px solid ${C.stone}`}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>Lingua</div>
+                <div style={{fontSize:12,color:C.textLight,marginTop:2}}>Lingua dell'interfaccia</div>
+              </div>
+              <select value={lingua} onChange={e=>setLingua(e.target.value)} style={{...L.input,marginBottom:0,width:"auto",fontSize:13,padding:"6px 12px",borderRadius:10}}>
+                {["Italiano","English","Français","Deutsch","Español"].map(l=><option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div style={{...L.row,justifyContent:"space-between",padding:"12px 0"}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:500,color:C.text}}>Tema</div>
+                <div style={{fontSize:12,color:C.textLight,marginTop:2}}>Aspetto dell'app</div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                {["Chiaro","Scuro"].map(t=>(
+                  <div key={t} onClick={()=>setTema(t)} style={{...L.pill,cursor:"pointer",background:tema===t?C.text:C.stone,color:tema===t?C.white:C.textMid,transition:"all 0.15s"}}>{t}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ACCOUNT */}
+          <div style={L.secLabel}>⚙️ Account</div>
+          {[
+            {i:"💎",l:"Mamis Premium",s:"Sblocca tutte le funzionalità"},
+            {i:"📤",l:"Esporta i miei dati",s:"Scarica una copia dei tuoi dati"},
+            {i:"🗑️",l:"Elimina account",s:"Rimuovi permanentemente il tuo profilo"},
+            {i:"❓",l:"Supporto e FAQ",s:"Hai bisogno di aiuto?"},
+          ].map((item,i)=>(
+            <div key={i} style={{...L.card,...L.row,padding:"14px 18px",cursor:"pointer",marginBottom:8}}>
+              <span style={{fontSize:20}}>{item.i}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,color:C.text,fontWeight:400}}>{item.l}</div>
+                <div style={{fontSize:11,color:C.textLight,marginTop:2}}>{item.s}</div>
+              </div>
+              <span style={{color:C.textLight,fontSize:18}}>›</span>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ── NOTIFICHE ── */}
+      {tab==="notifiche"&&(
+        <>
+          <div style={{...L.cardWarm,padding:"14px 18px",marginBottom:14}}>
+            <div style={{fontSize:13,color:C.textMid,lineHeight:1.65}}>Gestisci le notifiche Mamis. Ogni tipo è personalizzabile.</div>
+          </div>
+          <div style={L.card}>
+            <Toggle on={notifSettings.agenda} onChange={v=>setNotifSettings({...notifSettings,agenda:v})} label="📅 Promemoria impegni" sub="30 minuti prima di ogni evento"/>
+            <Toggle on={notifSettings.social} onChange={v=>setNotifSettings({...notifSettings,social:v})} label="💬 Notifiche social" sub="Like, commenti e nuovi post"/>
+            <Toggle on={notifSettings.babysitter} onChange={v=>setNotifSettings({...notifSettings,babysitter:v})} label="👶 Baby sitter" sub="Nuove baby sitter vicino a te"/>
+            <Toggle on={notifSettings.spesa} onChange={v=>setNotifSettings({...notifSettings,spesa:v})} label="🛒 Lista della spesa" sub="Promemoria articoli non acquistati"/>
+            <Toggle on={notifSettings.menu} onChange={v=>setNotifSettings({...notifSettings,menu:v})} label="🍽️ Menù del giorno" sub="Suggerimento pranzo e cena"/>
+            <Toggle on={notifSettings.venerdi} onChange={v=>setNotifSettings({...notifSettings,venerdi:v})} label="🥂 SPRITZ Time!" sub="Ogni venerdì sera"/>
+            <Toggle on={notifSettings.luoghi} onChange={v=>setNotifSettings({...notifSettings,luoghi:v})} label="📍 Nuovi luoghi" sub="Locali baby friendly vicino a te"/>
+            <Toggle on={notifSettings.tuttoOff} onChange={v=>setNotifSettings({...notifSettings,tuttoOff:v,agenda:!v,social:!v,babysitter:!v,spesa:!v,menu:!v,venerdi:!v,luoghi:!v})} label="🔕 Silenzio totale" sub="Disattiva tutto"/>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── NOTIFICATION BANNER ───────────────────────────────────────────────────────
+function NotifBanner({notifs,onDismiss}){
+  if(!notifs.length)return null;
+  return(
+    <div style={{position:"absolute",top:0,left:0,right:0,zIndex:300,padding:"8px 14px",pointerEvents:"none"}}>
+      {notifs.map(n=>(
+        <div key={n.id} className="slide-up" style={{...L.card,marginBottom:6,...L.row,padding:"12px 16px",boxShadow:"0 4px 24px rgba(0,0,0,0.14)",pointerEvents:"all",border:`1px solid ${C.stone}`}}>
+          <span style={{fontSize:22}}>{n.icon}</span>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:C.text}}>{n.title}</div><div style={{fontSize:12,color:C.textMid}}>{n.body}</div></div>
+          <button onClick={()=>onDismiss(n.id)} style={{background:"none",border:"none",color:C.textLight,fontSize:20,cursor:"pointer",pointerEvents:"all"}}>×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+const NAV=[
+  {id:"home",icon:"⊙",label:"Home"},
+  {id:"agenda",icon:"◻",label:"Agenda"},
+  {id:"social",icon:"◯",label:"Social"},
+  {id:"luoghi",icon:"◈",label:"Luoghi"},
+  {id:"babysitter",icon:"◇",label:"Baby Sitter"},
+  {id:"casa",icon:"⊞",label:"Casa"},
+  {id:"profilo",icon:"◉",label:"Profilo"},
+];
+
+function MamisApp(){
+  const now=useClock();
+  const [screen,setScreen]=useState("home");
+  const [events,setEvents]=useState(initEvents);
+  const [posts,setPosts]=useState(initPosts);
+  const [shopping,setShopping]=useState(initShopping);
+  const [chores,setChores]=useState(initChores);
+  const [userType,setUserType]=useState("mamma");
+  const [groups,setGroups]=useState([]);
+  const [notifSettings,setNotifSettings]=useState({agenda:true,social:true,babysitter:true,spesa:false,menu:false,venerdi:true,luoghi:false,tuttoOff:false});
+  const [notifs,setNotifs]=useState([]);
+  const dismissNotif=id=>setNotifs(p=>p.filter(n=>n.id!==id));
+
+  useEffect(()=>{
+    if(notifs.length>0){const t=setTimeout(()=>setNotifs(p=>p.slice(1)),5000);return()=>clearTimeout(t);}
+  },[notifs.length]);
+
+  const screenTitles={home:null,agenda:"Agenda",social:"Community",luoghi:"Luoghi",babysitter:"Baby Sitter",casa:"Casa",profilo:"Profilo"};
+  const h=now.getHours();
+
+  return(
+    <div style={L.app}>
+      <NotifBanner notifs={notifs} onDismiss={dismissNotif}/>
+
+      {/* HEADER */}
+      <div style={L.header}>
+        <div style={{...L.row,justifyContent:"space-between"}}>
+          <div style={L.row}>
+            <LogoIcon size={48}/>
+            <div style={{marginLeft:4}}>
+              {screen==="home"?(
+                <>
+                  <div style={{fontSize:36,fontWeight:600,color:C.white,letterSpacing:3,fontFamily:"'Outfit',sans-serif",lineHeight:1}}>Mamis</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",letterSpacing:4,textTransform:"uppercase",marginTop:3,fontWeight:300}}>la tua alleata</div>
+                </>
+              ):(
+                <>
+                  <div style={{fontSize:22,fontWeight:600,color:C.white,letterSpacing:3,fontFamily:"'Outfit',sans-serif",lineHeight:1}}>Mamis</div>
+                  <div style={{fontSize:13,fontWeight:300,color:"rgba(255,255,255,0.85)",marginTop:2,letterSpacing:1}}>{screenTitles[screen]}</div>
+                </>
+              )}
+            </div>
+          </div>
+          <button onClick={()=>setNotifs(p=>[...p,{id:uid(),icon:"🔔",title:"Test",body:"Notifiche attive! 🌸"}])} style={{background:"rgba(255,255,255,0.18)",border:"none",borderRadius:"50%",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative",color:C.white,fontSize:16}}>
+            🔔
+            {notifs.length>0&&<span style={{position:"absolute",top:-2,right:-2,background:C.white,color:C.red,borderRadius:"50%",width:16,height:16,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{notifs.length}</span>}
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={L.scroll}>
+        {screen==="home"&&<HomeScreen events={events} shopping={shopping} chores={chores} now={now} userType={userType}/>}
+        {screen==="agenda"&&<AgendaScreen events={events} setEvents={setEvents} groups={groups} setScreen={setScreen}/>}
+        {screen==="social"&&<SocialScreen posts={posts} setPosts={setPosts} events={events} groups={groups} setGroups={setGroups}/>}
+        {screen==="luoghi"&&<PlacesScreen/>}
+        {screen==="babysitter"&&<BabySitterScreen userType={userType} setUserType={setUserType}/>}
+        {screen==="casa"&&<CasaScreen shopping={shopping} setShopping={setShopping} chores={chores} setChores={setChores}/>}
+        {screen==="profilo"&&<ProfileScreen notifSettings={notifSettings} setNotifSettings={setNotifSettings} userType={userType}/>}
+      </div>
+
+      {/* NAV */}
+      <nav style={L.nav}>
+        {NAV.map(item=>(
+          <button key={item.id} onClick={()=>setScreen(item.id)} style={{...L.navBtn,background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 2px",borderRadius:10,transition:"all 0.18s",minWidth:40,touchAction:"manipulation"}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:screen===item.id?C.red:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}>
+              {item.id==="home"&&<LogoIcon size={22}/>}
+              {item.id!=="home"&&<span style={{fontSize:screen===item.id?15:14,color:screen===item.id?C.white:C.textLight}}>{item.icon}</span>}
+            </div>
+            <span style={{fontSize:9,fontWeight:screen===item.id?500:400,color:screen===item.id?C.red:C.textLight,letterSpacing:0.3,textTransform:"uppercase",whiteSpace:"nowrap"}}>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MamisApp/>);
+</script>
+</body>
+</html>
